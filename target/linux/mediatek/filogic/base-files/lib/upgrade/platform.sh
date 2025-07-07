@@ -114,7 +114,6 @@ platform_do_upgrade() {
 	huasifei,wh3000-emmc|\
 	*Airpi*|\
 	cmcc,rax3000m-emmc|\
-	sl,3000-emmc|\
 	smartrg,sdg-8612|\
 	smartrg,sdg-8614|\
 	smartrg,sdg-8622|\
@@ -231,7 +230,6 @@ platform_copy_config() {
 	huasifei,wh3000-emmc|\
 	cmcc,rax3000m-emmc|\
 	jdcloud,re-cp-03|\
-	sl,3000-emmc|\
 	smartrg,sdg-8612|\
 	smartrg,sdg-8614|\
 	smartrg,sdg-8622|\

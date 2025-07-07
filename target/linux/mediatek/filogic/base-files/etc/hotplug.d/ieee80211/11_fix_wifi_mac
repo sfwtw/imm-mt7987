@@ -71,7 +71,6 @@ case "$board" in
 	cudy,re3000-v1|\
 	cudy,tr3000-v1|\
 	cudy,tr3000-v1-ubootmod|\
-	cudy,tr3000-v1-256mb|\
 	cudy,wr3000s-v1|\
 	cudy,wr3000-v1)
 		addr=$(mtd_get_mac_binary bdinfo 0xde00)
@@ -152,16 +151,6 @@ case "$board" in
 		addr=$(mtd_get_mac_ascii product_info ethaddr)
 		[ "$PHYNBR" = "0" ] && macaddr_add $addr 2 > /sys${DEVPATH}/macaddress
 		[ "$PHYNBR" = "1" ] && macaddr_add $addr 3 > /sys${DEVPATH}/macaddress
-		;;
-	yvr,x6)
-		addr=$(mtd_get_mac_ascii Factory_info MAC)
-		[ "$PHYNBR" = "0" ] && macaddr_add $addr 3 > /sys${DEVPATH}/macaddress
-		[ "$PHYNBR" = "1" ] && macaddr_add $addr 4 > /sys${DEVPATH}/macaddress
-		;;
-        sl,3000-emmc)
-		label_mac=$(mmc_get_mac_binary factory 0x04)
-		[ "$PHYNBR" = "0" ] && macaddr_add $label_mac 1 > /sys${DEVPATH}/macaddress
-		[ "$PHYNBR" = "1" ] && macaddr_add $label_mac 2 > /sys${DEVPATH}/macaddress
 		;;
 	tplink,tl-xdr4288|\
 	tplink,tl-xdr6086|\
