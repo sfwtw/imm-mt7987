@@ -40,15 +40,15 @@ function render_signal_badge(signalPercent, signalValue, noiseValue, wrap, mode)
 	if (signalPercent < 0)
 		icon = L.resource('icons/signal-none.svg');
 	else if (signalPercent == 0)
-		icon = L.resource('icons/signal-0.svg');
+		icon = L.resource('icons/signal-000-000.svg');
 	else if (signalPercent < 25)
-		icon = L.resource('icons/signal-0-25.svg');
+		icon = L.resource('icons/signal-000-025.svg');
 	else if (signalPercent < 50)
-		icon = L.resource('icons/signal-25-50.svg');
+		icon = L.resource('icons/signal-025-050.svg');
 	else if (signalPercent < 75)
-		icon = L.resource('icons/signal-50-75.svg');
+		icon = L.resource('icons/signal-050-075.svg');
 	else
-		icon = L.resource('icons/signal-75-100.svg');
+		icon = L.resource('icons/signal-075-100.svg');
 
 	if (signalValue != null && signalValue != 0) {
 		if (noiseValue != null && noiseValue != 0) {
