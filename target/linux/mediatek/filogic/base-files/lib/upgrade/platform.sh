@@ -1,5 +1,5 @@
 REQUIRE_IMAGE_METADATA=1
-RAMFS_COPY_BIN='fitblk'
+RAMFS_COPY_BIN='fitblk blkid dmsetup'
 
 asus_initial_setup()
 {
@@ -66,23 +66,41 @@ platform_do_upgrade() {
 	local board=$(board_name)
 
 	case "$board" in
+	mediatek,mt7981-rfb|\
+	mediatek,mt7988a-rfb)
+		[ -e /dev/dm-0 ] && dmsetup remove_all
+		[ -e /dev/fit0 ] && fitblk /dev/fit0
+		[ -e /dev/fitrw ] && fitblk /dev/fitrw
+		export_fitblk_bootdev
+		case "$CI_METHOD" in
+		emmc)
+			mmc_do_upgrade "$1"
+			;;
+		default)
+			default_do_upgrade "$1"
+			;;
+		ubi)
+			CI_KERNPART="firmware"
+			ubi_do_upgrade "$1"
+			;;
+		*)
+			if grep \"rootfs_data\" /proc/mtd; then
+				default_do_upgrade "$1"
+			fi
+			;;
+		esac
+		;;
 	abt,asr3000|\
 	bananapi,bpi-r3|\
 	bananapi,bpi-r3-mini|\
 	bananapi,bpi-r4|\
 	bananapi,bpi-r4-poe|\
-	cetron,ct3003-ubootmod|\
 	cmcc,a10-ubootmod|\
 	cmcc,rax3000m|\
-	cmcc,rax3000me|\
-	cudy,tr3000-v1-ubootmod|\
 	gatonetworks,gdsp|\
 	h3c,magic-nx30-pro|\
-	imou,lc-hx3001|\
 	jcg,q30-pro|\
 	jdcloud,re-cp-03|\
-	konka,komi-a31|\
-	livinet,zr-3020-ubootmod|\
 	mediatek,mt7981-rfb|\
 	mediatek,mt7988a-rfb|\
 	mercusys,mr90x-v1-ubi|\
@@ -90,7 +108,6 @@ platform_do_upgrade() {
 	nokia,ea0326gmp|\
 	openwrt,one|\
 	netcore,n60|\
-	netcore,n60-pro|\
 	qihoo,360t7|\
 	routerich,ax3000-ubootmod|\
 	tplink,tl-xdr4288|\
@@ -111,16 +128,15 @@ platform_do_upgrade() {
 	glinet,gl-mt6000|\
 	glinet,gl-x3000|\
 	glinet,gl-xe3000|\
-	huasifei,wh3000-emmc|\
-	*Airpi*|\
-	cmcc,rax3000m-emmc|\
+	hiveton,h5000m|\
+	huasifei,wh3000|\
+	mediatek,mt7987a|\
 	smartrg,sdg-8612|\
 	smartrg,sdg-8614|\
 	smartrg,sdg-8622|\
 	smartrg,sdg-8632|\
 	smartrg,sdg-8733|\
 	smartrg,sdg-8733a|\
-	huasifei,wh3000-pro|\
 	smartrg,sdg-8734)
 		CI_KERNPART="kernel"
 		CI_ROOTPART="rootfs"
@@ -195,12 +211,13 @@ platform_check_image() {
 	[ "$#" -gt 1 ] && return 1
 
 	case "$board" in
+	mediatek,mt7981-rfb|\
+	mediatek,mt7988a-rfb|\
 	bananapi,bpi-r3|\
 	bananapi,bpi-r3-mini|\
 	bananapi,bpi-r4|\
 	bananapi,bpi-r4-poe|\
-	cmcc,rax3000m|\
-	cmcc,rax3000me)
+	cmcc,rax3000m)
 		[ "$magic" != "d00dfeed" ] && {
 			echo "Invalid image type."
 			return 1
@@ -218,7 +235,17 @@ platform_check_image() {
 
 platform_copy_config() {
 	case "$(board_name)" in
-	*Airpi*|\
+	mediatek,mt7981-rfb|\
+	mediatek,mt7988a-rfb|\
+	bananapi,bpi-r3|\
+	bananapi,bpi-r3-mini|\
+	bananapi,bpi-r4|\
+	bananapi,bpi-r4-poe|\
+	cmcc,rax3000m)
+		if [ "$CI_METHOD" = "emmc" ]; then
+			emmc_copy_config
+		fi
+		;;
 	acer,predator-w6|\
 	acer,predator-w6d|\
 	acer,vero-w6m|\
@@ -227,8 +254,9 @@ platform_copy_config() {
 	glinet,gl-mt6000|\
 	glinet,gl-x3000|\
 	glinet,gl-xe3000|\
-	huasifei,wh3000-emmc|\
-	cmcc,rax3000m-emmc|\
+	hiveton,h5000m|\
+	huasifei,wh3000|\
+	mediatek,mt7987a|\
 	jdcloud,re-cp-03|\
 	smartrg,sdg-8612|\
 	smartrg,sdg-8614|\
@@ -237,19 +265,8 @@ platform_copy_config() {
 	smartrg,sdg-8733|\
 	smartrg,sdg-8733a|\
 	smartrg,sdg-8734|\
-	huasifei,wh3000-pro|\
 	ubnt,unifi-6-plus)
 		emmc_copy_config
-		;;
-	bananapi,bpi-r3|\
-	bananapi,bpi-r3-mini|\
-	bananapi,bpi-r4|\
-	bananapi,bpi-r4-poe|\
-	cmcc,rax3000m|\
-	cmcc,rax3000me)
-		if [ "$CI_METHOD" = "emmc" ]; then
-			emmc_copy_config
-		fi
 		;;
 	esac
 }

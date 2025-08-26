@@ -338,6 +338,7 @@ static void gmac_ppe_fwd_enable(struct net_device *dev)
 		set_gmac_ppe_fwd(NR_GMAC3_PORT, 1);
 }
 
+
 void ppd_dev_setting(void)
 {
 	struct net_device *br_dev;
@@ -347,11 +348,15 @@ void ppd_dev_setting(void)
                         struct list_head *pos;
                 	netdev_for_each_lower_dev(br_dev, dev, pos) {
                         	if (dev->flags & IFF_UP) {
-                              		ppd_dev = __dev_get_by_name(&init_net, dev->name);
+                              		if (netif_carrier_ok(dev)){
+					ppd_dev = __dev_get_by_name(&init_net, dev->name);
                                 	break;
+					}
                                 }
                         }
                 }
+	printk("\nrx now ppd dev is %s\n",hnat_priv->g_ppdev->name);
+        printk("\ntx now ppd dev is %s\n",ppd_dev->name);
 }
 
 int nf_hnat_netdevice_event(struct notifier_block *unused, unsigned long event,
@@ -2921,9 +2926,6 @@ static unsigned int mtk_hnat_nf_post_routing(
 	
 	if (!IS_WHNAT(out) && IS_EXT(out) && FROM_WED(skb))
 		return 0;
-
-	if (FROM_WED(skb) && (!strncmp(out->name, "eth", 3)))
-                return 0;
 
 	trace_printk("[%s] case hit, %x-->%s, reason=%x\n", __func__,
 		     skb_hnat_iface(skb), out->name, skb_hnat_reason(skb));
