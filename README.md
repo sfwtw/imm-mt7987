@@ -67,6 +67,9 @@ To build your own firmware you need a GNU/Linux, BSD or macOS system (case sensi
      # MT7987_mt7992
      cp -f defconfig/mt7987_mt7992.config .config
 
+     # MT7988_mt7992
+     cp -f defconfig/mt7988_mt7992.config .config
+
      
   6. Run `make` to build your firmware. This will download all sources, build the cross-compile toolchain and then cross-compile the GNU/Linux kernel & all chosen applications for your target system.
 
