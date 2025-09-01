@@ -217,13 +217,18 @@ platform_check_image() {
 	bananapi,bpi-r3-mini|\
 	bananapi,bpi-r4|\
 	bananapi,bpi-r4-poe|\
+	hiveton,h5000m|\
 	cmcc,rax3000m)
-		[ "$magic" != "d00dfeed" ] && {
+		magic="$(dd if="$1" bs=1 skip=257 count=5 2>/dev/null)"
+
+		[ "$magic" != "ustar" ] && {
 			echo "Invalid image type."
 			return 1
 		}
+
 		return 0
 		;;
+
 	*)
 		nand_do_platform_check "$board" "$1"
 		return $?

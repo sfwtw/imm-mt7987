@@ -1331,6 +1331,10 @@ return view.extend({
 					o = ss.taboption('general', form.Flag, 'hidden', _('Hide <abbr title="Extended Service Set Identifier">ESSID</abbr>'), _('Where the ESSID is hidden, clients may fail to roam and airtime efficiency may be significantly reduced.'));
 					o.depends('mode', 'ap');
 
+					o = ss.taboption('general', form.Flag, 'mlo', _('Enable MLO'));
+                                        o.depends('mode', 'ap');
+                                        o.default = o.disabled;
+
 					o = ss.taboption('general', form.Flag, 'wmm', _('WMM Mode'));
 					o.depends('mode', 'ap');
 					o.default = o.enabled;
