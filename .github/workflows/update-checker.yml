@@ -1,25 +1,6 @@
 name: 🔍 Repository Update Checker
 
 # ================================================================================
-# Environment Configuration
-# ================================================================================
-env:
-  # Repository URLs and Branches
-  OP_URL: https://github.com/coolsnowwolf/lede
-  OP_BRANCH: master
-  QMODEM_URL: https://github.com/FUjr/QModem
-  QMODEM_BRANCH: main
-  
-  # Configuration Branch and Paths
-  CONFIG_BRANCH: config-data
-  OP_LAST_COMMIT_FILE: op_last_commit.txt
-  QMODEM_LAST_COMMIT_FILE: qmodem_last_commit.txt
-  
-  # System Settings
-  TZ: Asia/Shanghai
-  GITHUB_TOKEN: ${{ secrets.TOKEN }}
-
-# ================================================================================
 # Trigger Configuration
 # ================================================================================
 on:
@@ -64,30 +45,49 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ env.GITHUB_TOKEN }}
+          token: ${{ secrets.TOKEN }}
 
-      - name: 🛠️ Setup Environment & Config Branch
+      - name: 🛠️ Load Configuration & Setup Environment
         run: |
-          echo "::group::🔧 Environment Setup"
+          echo "::group::🔧 Configuration Loading"
+          
+          # Load configuration from config.env
+          if [ -f ".github/workflows/config.env" ]; then
+            echo "📋 Loading configuration from config.env..."
+            # Source the config file and export all variables
+            while IFS='=' read -r key value; do
+              # Skip comments and empty lines
+              [[ $key =~ ^[[:space:]]*# ]] && continue
+              [[ -z $key ]] && continue
+              # Remove quotes from value and export
+              value=$(echo "$value" | sed 's/^"\(.*\)"$/\1/')
+              export "$key=$value"
+              echo "$key=$value" >> $GITHUB_ENV
+            done < .github/workflows/config.env
+            echo "✅ Configuration loaded successfully"
+          else
+            echo "❌ Configuration file not found!"
+            exit 1
+          fi
           
           # Setup Git configuration for commits
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions Bot"
           
           # Create and checkout config branch if it doesn't exist
-          if git rev-parse --verify origin/${{ env.CONFIG_BRANCH }} >/dev/null 2>&1; then
+          if git rev-parse --verify origin/$CONFIG_BRANCH >/dev/null 2>&1; then
             echo "📂 Config branch exists, checking out..."
-            git fetch origin ${{ env.CONFIG_BRANCH }}
-            git checkout ${{ env.CONFIG_BRANCH }}
+            git fetch origin $CONFIG_BRANCH
+            git checkout $CONFIG_BRANCH
           else
             echo "🆕 Creating new config branch..."
-            git checkout --orphan ${{ env.CONFIG_BRANCH }}
+            git checkout --orphan $CONFIG_BRANCH
             git rm -rf . 2>/dev/null || true
             echo "# Configuration Storage Branch" > README.md
             echo "This branch stores configuration files for the workflows." >> README.md
             git add README.md
             git commit -m "🎯 Initialize configuration storage branch"
-            git push origin ${{ env.CONFIG_BRANCH }}
+            git push origin $CONFIG_BRANCH
           fi
           
           # Display environment info
@@ -119,9 +119,9 @@ jobs:
           
           # Function to check OP repository updates
           check_op_updates() {
-            echo "::group::📦 OP Repository (coolsnowwolf/lede) Check"
+            echo "::group::📦 OP Repository ($OP_DISPLAY_NAME) Check"
             
-            if git clone --depth 50 "${{ env.OP_URL }}" -b "${{ env.OP_BRANCH }}" temp_op 2>/dev/null; then
+            if git clone --depth 50 "$OP_URL" -b "$OP_BRANCH" temp_op 2>/dev/null; then
               cd temp_op
               
               # Get current commit information
@@ -139,8 +139,8 @@ jobs:
               cd ..
               
               # Read last tracked commit
-              if [ -f "${{ env.OP_LAST_COMMIT_FILE }}" ]; then
-                last_commit=$(grep -v '^#' "${{ env.OP_LAST_COMMIT_FILE }}" | head -1 | tr -d '[:space:]')
+              if [ -f "$OP_LAST_COMMIT_FILE" ]; then
+                last_commit=$(grep -v '^#' "$OP_LAST_COMMIT_FILE" | head -1 | tr -d '[:space:]')
                 echo "📋 Last Tracked: ${last_commit:-'none'}"
                 
                 if [ -n "$last_commit" ] && [ "$last_commit" != "$current_commit" ]; then
@@ -160,10 +160,10 @@ jobs:
               # Store current commit info
               {
                 echo "# OP Repository Last Tracked Commit"
-                echo "# This file stores the last successfully checked commit hash for coolsnowwolf/lede"
+                echo "# This file stores the last successfully checked commit hash for $OP_URL"
                 echo "# Last Updated: ${current_time}"
                 echo "${current_commit}"
-              } > "${{ env.OP_LAST_COMMIT_FILE }}"
+              } > "$OP_LAST_COMMIT_FILE"
               
               rm -rf temp_op
             else
@@ -176,9 +176,9 @@ jobs:
           
           # Function to check QModem repository updates  
           check_qmodem_updates() {
-            echo "::group::📱 QModem Repository (FUjr/QModem) Check"
+            echo "::group::📱 QModem Repository ($QMODEM_DISPLAY_NAME) Check"
             
-            if git clone --depth 50 "${{ env.QMODEM_URL }}" -b "${{ env.QMODEM_BRANCH }}" temp_qmodem 2>/dev/null; then
+            if git clone --depth 50 "$QMODEM_URL" -b "$QMODEM_BRANCH" temp_qmodem 2>/dev/null; then
               cd temp_qmodem
               
               # Get current commit information
@@ -196,8 +196,8 @@ jobs:
               cd ..
               
               # Read last tracked commit
-              if [ -f "${{ env.QMODEM_LAST_COMMIT_FILE }}" ]; then
-                last_commit=$(grep -v '^#' "${{ env.QMODEM_LAST_COMMIT_FILE }}" | head -1 | tr -d '[:space:]')
+              if [ -f "$QMODEM_LAST_COMMIT_FILE" ]; then
+                last_commit=$(grep -v '^#' "$QMODEM_LAST_COMMIT_FILE" | head -1 | tr -d '[:space:]')
                 echo "📋 Last Tracked: ${last_commit:-'none'}"
                 
                 if [ -n "$last_commit" ] && [ "$last_commit" != "$current_commit" ]; then
@@ -217,10 +217,10 @@ jobs:
               # Store current commit info
               {
                 echo "# QModem Repository Last Tracked Commit"
-                echo "# This file stores the last successfully checked commit hash for FUjr/QModem"
+                echo "# This file stores the last successfully checked commit hash for $QMODEM_URL"
                 echo "# Last Updated: ${current_time}"
                 echo "${current_commit}"
-              } > "${{ env.QMODEM_LAST_COMMIT_FILE }}"
+              } > "$QMODEM_LAST_COMMIT_FILE"
               
               rm -rf temp_qmodem
             else
@@ -281,7 +281,7 @@ jobs:
       - name: 🚀 Trigger Build Workflow
         if: steps.check_updates.outputs.has_updates == 'true'
         env:
-          GH_TOKEN: ${{ env.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TOKEN }}
         run: |
           echo "::group::🚀 Build Workflow Trigger"
           
@@ -311,7 +311,7 @@ jobs:
             response=$(curl -s -w "\n%{http_code}" -X POST \
               "https://api.github.com/repos/${{ github.repository }}/dispatches" \
               -H "Accept: application/vnd.github.v3+json" \
-              -H "Authorization: token ${{ env.GITHUB_TOKEN }}" \
+              -H "Authorization: token ${{ secrets.TOKEN }}" \
               -H "Content-Type: application/json" \
               -d '{
                 "event_type": "Source-Code-Update",
@@ -345,7 +345,7 @@ jobs:
           echo "::group::💾 Configuration File Updates"
           
           # Make sure we're on the config branch
-          git checkout ${{ env.CONFIG_BRANCH }} 2>/dev/null || git checkout -b ${{ env.CONFIG_BRANCH }}
+          git checkout $CONFIG_BRANCH 2>/dev/null || git checkout -b $CONFIG_BRANCH
           
           # Check if there are any changes to commit
           git add .
@@ -368,7 +368,7 @@ jobs:
             "
             
             git commit -m "$commit_msg"
-            git push origin ${{ env.CONFIG_BRANCH }}
+            git push origin $CONFIG_BRANCH
             
             echo "✅ Configuration updates committed and pushed to config branch"
           fi
@@ -383,7 +383,7 @@ jobs:
         uses: Mattraks/delete-workflow-runs@v2
         continue-on-error: true
         with:
-          token: ${{ env.GITHUB_TOKEN }}
+          token: ${{ secrets.TOKEN }}
           repository: ${{ github.repository }}
           retain_days: 7
           keep_minimum_runs: 5
@@ -415,24 +415,24 @@ jobs:
           echo "|------------|--------|---------|-------------|" >> $GITHUB_STEP_SUMMARY
           
           # OP Repository Status
-          if [ -f "${{ env.OP_LAST_COMMIT_FILE }}" ]; then
+          if [ -f "$OP_LAST_COMMIT_FILE" ]; then
             op_status="✅ Tracked"
             op_config="📄 Present"
           else
             op_status="⚠️ Not Tracked"
             op_config="❌ Missing"
           fi
-          echo "| 🔧 OP (coolsnowwolf/lede) | $op_status | ${{ steps.check_updates.outputs.op_updated || 'N/A' }} | $op_config |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔧 OP ($OP_DISPLAY_NAME) | $op_status | ${{ steps.check_updates.outputs.op_updated || 'N/A' }} | $op_config |" >> $GITHUB_STEP_SUMMARY
           
           # QModem Repository Status  
-          if [ -f "${{ env.QMODEM_LAST_COMMIT_FILE }}" ]; then
+          if [ -f "$QMODEM_LAST_COMMIT_FILE" ]; then
             qmodem_status="✅ Tracked"
             qmodem_config="📄 Present"
           else
             qmodem_status="⚠️ Not Tracked"
             qmodem_config="❌ Missing"
           fi
-          echo "| 📱 QModem (FUjr/QModem) | $qmodem_status | ${{ steps.check_updates.outputs.qmodem_updated || 'N/A' }} | $qmodem_config |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📱 QModem ($QMODEM_DISPLAY_NAME) | $qmodem_status | ${{ steps.check_updates.outputs.qmodem_updated || 'N/A' }} | $qmodem_config |" >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
           

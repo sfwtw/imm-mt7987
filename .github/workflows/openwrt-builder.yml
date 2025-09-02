@@ -13,48 +13,6 @@
 name: 🚀 OpenWrt Builder
 
 # ================================================================================
-# Environment Configuration
-# ================================================================================
-env:
-  # Repository Configuration
-  OP_URL: https://github.com/coolsnowwolf/lede
-  OP_BRANCH: master
-  QMODEM_URL: https://github.com/FUjr/QModem
-  QMODEM_BRANCH: main
-  
-  # Build Configuration Files
-  FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: .config
-  DIY_P1_SH: diy-part1.sh
-  DIY_P2_SH: diy-part2.sh
-  
-  # Upload Settings
-  UPLOAD_BIN_DIR: false
-  UPLOAD_FIRMWARE: true
-  UPLOAD_RELEASE: true
-  
-  # Version and Release Configuration
-  RELEASE_TAG: 'Lede-Releases'
-  FIRMWARE_PREFIX: 'lede'
-  VERSION_LATEST: '001'
-  VERSION_PREVIOUS: '002'
-  VERSION_OLDEST: '003'
-  ARTIFACT_DIR: './firmware_archives'
-  
-  # System Configuration
-  TZ: Asia/Shanghai
-  BUILD_TYPE: ${{ github.event_name == 'workflow_dispatch' && 'manual' || 'auto' }}
-  
-  # Configuration Branch and Paths  
-  CONFIG_BRANCH: config-data
-  OP_UPDATES_001: op_updates_001.txt
-  OP_UPDATES_002: op_updates_002.txt
-  OP_UPDATES_003: op_updates_003.txt
-  QMODEM_UPDATES_001: qmodem_updates_001.txt
-  QMODEM_UPDATES_002: qmodem_updates_002.txt
-  QMODEM_UPDATES_003: qmodem_updates_003.txt
-
-# ================================================================================
 # Trigger Configuration
 # ================================================================================
 on:
@@ -101,6 +59,43 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.TOKEN || secrets.GITHUB_TOKEN }}
 
+      - name: 🛠️ Load Configuration & Setup Environment
+        run: |
+          echo "::group::🔧 Configuration Loading"
+          
+          # Load configuration from config.env
+          if [ -f ".github/workflows/config.env" ]; then
+            echo "📋 Loading configuration from config.env..."
+            # Source the config file and export all variables
+            while IFS='=' read -r key value; do
+              # Skip comments and empty lines
+              [[ $key =~ ^[[:space:]]*# ]] && continue
+              [[ -z $key ]] && continue
+              # Remove quotes from value and export
+              value=$(echo "$value" | sed 's/^"\(.*\)"$/\1/')
+              export "$key=$value"
+              echo "$key=$value" >> $GITHUB_ENV
+            done < .github/workflows/config.env
+            echo "✅ Configuration loaded successfully"
+          else
+            echo "❌ Configuration file not found!"
+            exit 1
+          fi
+          
+          # Set dynamic environment variables
+          echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && 'manual' || 'auto' }}" >> $GITHUB_ENV
+          echo "TZ=$TZ" >> $GITHUB_ENV
+          
+          # Override upload settings if provided via inputs
+          if [ "${{ github.event.inputs.upload_firmware }}" != "" ]; then
+            echo "UPLOAD_FIRMWARE=${{ github.event.inputs.upload_firmware }}" >> $GITHUB_ENV
+          fi
+          if [ "${{ github.event.inputs.upload_release }}" != "" ]; then
+            echo "UPLOAD_RELEASE=${{ github.event.inputs.upload_release }}" >> $GITHUB_ENV
+          fi
+          
+          echo "::endgroup::"
+
       - name: 📁 Setup Configuration Branch
         run: |
           echo "::group::🔧 Configuration Branch Setup"
@@ -110,19 +105,19 @@ jobs:
           git config --local user.name "GitHub Actions Bot"
           
           # Check out configuration branch to read existing records
-          if git rev-parse --verify origin/${{ env.CONFIG_BRANCH }} >/dev/null 2>&1; then
+          if git rev-parse --verify origin/$CONFIG_BRANCH >/dev/null 2>&1; then
             echo "📂 Config branch exists, checking out..."
-            git fetch origin ${{ env.CONFIG_BRANCH }}
-            git checkout ${{ env.CONFIG_BRANCH }}
+            git fetch origin $CONFIG_BRANCH
+            git checkout $CONFIG_BRANCH
             
             # Copy config files to main branch working directory for use during build
             git checkout ${{ github.ref_name }}
-            git show ${{ env.CONFIG_BRANCH }}:op_updates_001.txt > op_updates_001.txt 2>/dev/null || true
-            git show ${{ env.CONFIG_BRANCH }}:op_updates_002.txt > op_updates_002.txt 2>/dev/null || true
-            git show ${{ env.CONFIG_BRANCH }}:op_updates_003.txt > op_updates_003.txt 2>/dev/null || true
-            git show ${{ env.CONFIG_BRANCH }}:qmodem_updates_001.txt > qmodem_updates_001.txt 2>/dev/null || true
-            git show ${{ env.CONFIG_BRANCH }}:qmodem_updates_002.txt > qmodem_updates_002.txt 2>/dev/null || true
-            git show ${{ env.CONFIG_BRANCH }}:qmodem_updates_003.txt > qmodem_updates_003.txt 2>/dev/null || true
+            git show $CONFIG_BRANCH:$OP_UPDATES_001 > $OP_UPDATES_001 2>/dev/null || true
+            git show $CONFIG_BRANCH:$OP_UPDATES_002 > $OP_UPDATES_002 2>/dev/null || true
+            git show $CONFIG_BRANCH:$OP_UPDATES_003 > $OP_UPDATES_003 2>/dev/null || true
+            git show $CONFIG_BRANCH:$QMODEM_UPDATES_001 > $QMODEM_UPDATES_001 2>/dev/null || true
+            git show $CONFIG_BRANCH:$QMODEM_UPDATES_002 > $QMODEM_UPDATES_002 2>/dev/null || true
+            git show $CONFIG_BRANCH:$QMODEM_UPDATES_003 > $QMODEM_UPDATES_003 2>/dev/null || true
           else
             echo "⚠️ Config branch does not exist, will be created later"
           fi
@@ -134,7 +129,7 @@ jobs:
         run: |
           echo "::group::🔍 Build Configuration"
           echo "📅 Build Time: $(date '+%Y-%m-%d %H:%M:%S %Z')"
-          echo "🏷️ Build Type: ${{ env.BUILD_TYPE }}"
+          echo "🏷️ Build Type: $BUILD_TYPE"
           echo "🎯 Trigger: ${{ github.event_name }}"
           echo "🔧 Runner: $(uname -a)"
           echo "📂 Working Directory: $(pwd)"
@@ -235,10 +230,10 @@ jobs:
           df -hT $PWD
           
           echo "🔄 Cloning OpenWrt source code..."
-          echo "  Repository: ${{ env.OP_URL }}"
-          echo "  Branch: ${{ env.OP_BRANCH }}"
+          echo "  Repository: $OP_URL"
+          echo "  Branch: $OP_BRANCH"
           
-          if git clone --depth 1 "${{ env.OP_URL }}" -b "${{ env.OP_BRANCH }}" openwrt; then
+          if git clone --depth 1 "$OP_URL" -b "$OP_BRANCH" openwrt; then
             echo "✅ Successfully cloned OpenWrt source"
           else
             echo "❌ Failed to clone OpenWrt source"
@@ -269,7 +264,7 @@ jobs:
           
           # Get current build information
           current_time=$(date -Iseconds)
-          build_type="${{ env.BUILD_TYPE }}"
+          build_type="$BUILD_TYPE"
           
           echo "🕐 Build Time: $current_time"
           echo "🏷️ Build Type: $build_type"
@@ -327,8 +322,7 @@ jobs:
           }
           
           # Update OP repository records
-          update_repo_records "${{ env.OP_URL }}" "${{ env.OP_BRANCH }}" "op" "OP (coolsnowwolf/lede)"
-          
+          update_repo_records "$OP_URL" "$OP_BRANCH" "op" "OP (coolsnowwolf/lede)"
           
           echo "::endgroup::"
 
@@ -341,7 +335,7 @@ jobs:
           echo "::group::📱 QModem Repository Integration"
           
           echo "🔄 Cloning QModem repository..."
-          if git clone "${{ env.QMODEM_URL }}" -b "${{ env.QMODEM_BRANCH }}" qmodem_temp; then
+          if git clone "$QMODEM_URL" -b "$QMODEM_BRANCH" qmodem_temp; then
             echo "✅ Successfully cloned QModem repository"
             
             # Integrate QModem files if needed
@@ -372,9 +366,9 @@ jobs:
           echo "::group::🍽️ Feed Configuration"
           
           # Load custom feeds configuration if it exists
-          if [ -f "$GITHUB_WORKSPACE/${{ env.FEEDS_CONF }}" ]; then
+          if [ -f "$GITHUB_WORKSPACE/$FEEDS_CONF" ]; then
             echo "📋 Loading custom feeds configuration..."
-            cp "$GITHUB_WORKSPACE/${{ env.FEEDS_CONF }}" feeds.conf.default
+            cp "$GITHUB_WORKSPACE/$FEEDS_CONF" feeds.conf.default
             echo "✅ Custom feeds configuration loaded"
           else
             echo "📋 Using default feeds configuration"
@@ -391,11 +385,11 @@ jobs:
           echo "::group::🎛️ DIY Script Installation"
           
           # Install DIY script part 1 (before feeds update)
-          if [ -f "${{ env.DIY_P1_SH }}" ]; then
+          if [ -f "$DIY_P1_SH" ]; then
             echo "🔧 Running DIY script part 1..."
-            chmod +x "${{ env.DIY_P1_SH }}"
+            chmod +x "$DIY_P1_SH"
             cd /mnt/workdir/openwrt
-            $GITHUB_WORKSPACE/${{ env.DIY_P1_SH }}
+            $GITHUB_WORKSPACE/$DIY_P1_SH
             echo "✅ DIY script part 1 completed"
           else
             echo "📝 No DIY script part 1 found"
@@ -424,9 +418,9 @@ jobs:
           echo "::group::⚙️ Build Configuration"
           
           # Load custom configuration
-          if [ -f "${{ env.CONFIG_FILE }}" ]; then
+          if [ -f "$CONFIG_FILE" ]; then
             echo "📋 Loading custom build configuration..."
-            cp "${{ env.CONFIG_FILE }}" /mnt/workdir/openwrt/.config
+            cp "$CONFIG_FILE" /mnt/workdir/openwrt/.config
             echo "✅ Custom configuration loaded"
           else
             echo "⚠️ No custom configuration found - using defaults"
@@ -435,11 +429,11 @@ jobs:
           fi
           
           # Run DIY script part 2 (after feeds installation)
-          if [ -f "${{ env.DIY_P2_SH }}" ]; then
+          if [ -f "$DIY_P2_SH" ]; then
             echo "🔧 Running DIY script part 2..."
-            chmod +x "${{ env.DIY_P2_SH }}"
+            chmod +x "$DIY_P2_SH"
             cd /mnt/workdir/openwrt
-            $GITHUB_WORKSPACE/${{ env.DIY_P2_SH }}
+            $GITHUB_WORKSPACE/$DIY_P2_SH
             echo "✅ DIY script part 2 completed"
           else
             echo "📝 No DIY script part 2 found"
@@ -486,7 +480,7 @@ jobs:
           
           build_start_time=$(date +%s)
           echo "🚀 Starting firmware compilation at $(date)"
-          echo "🔧 Build Type: ${{ env.BUILD_TYPE }}"
+          echo "🔧 Build Type: $BUILD_TYPE"
           
           # Determine build parameters based on type
           case "${{ github.event.inputs.build_type || 'standard' }}" in
@@ -567,7 +561,7 @@ jobs:
           rm -rf packages
           
           # Create new version directory
-          NEW_VERSION="${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}"
+          NEW_VERSION="${FIRMWARE_PREFIX}_$VERSION_LATEST"
           mkdir -p "$NEW_VERSION"
           
           # Move all firmware files to version directory
@@ -585,8 +579,8 @@ jobs:
           
           # Prepare archive directory
           cd "$CURRENT_PATH"
-          mkdir -p "${{ env.ARTIFACT_DIR }}"
-          cd "${{ env.ARTIFACT_DIR }}"
+          mkdir -p "$ARTIFACT_DIR"
+          cd "$ARTIFACT_DIR"
           
           echo "📋 Current firmware files:"
           ls -lh *.zip 2>/dev/null || echo "No existing firmware files"
@@ -595,20 +589,20 @@ jobs:
           echo "🔄 Performing version rotation..."
           
           # Move 002 to 003 (if exists)
-          if [ -f "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_PREVIOUS }}.zip" ]; then
-            echo "  Moving ${{ env.VERSION_PREVIOUS }} → ${{ env.VERSION_OLDEST }}"
-            mv "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_PREVIOUS }}.zip" "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_OLDEST }}.zip"
+          if [ -f "${FIRMWARE_PREFIX}_$VERSION_PREVIOUS.zip" ]; then
+            echo "  Moving $VERSION_PREVIOUS → $VERSION_OLDEST"
+            mv "${FIRMWARE_PREFIX}_$VERSION_PREVIOUS.zip" "${FIRMWARE_PREFIX}_$VERSION_OLDEST.zip"
           fi
           
           # Move 001 to 002 (if exists)
-          if [ -f "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}.zip" ]; then
-            echo "  Moving ${{ env.VERSION_LATEST }} → ${{ env.VERSION_PREVIOUS }}"
-            mv "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}.zip" "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_PREVIOUS }}.zip"
+          if [ -f "${FIRMWARE_PREFIX}_$VERSION_LATEST.zip" ]; then
+            echo "  Moving $VERSION_LATEST → $VERSION_PREVIOUS"
+            mv "${FIRMWARE_PREFIX}_$VERSION_LATEST.zip" "${FIRMWARE_PREFIX}_$VERSION_PREVIOUS.zip"
           fi
           
           # Place new version as 001
-          echo "  Installing new version as ${{ env.VERSION_LATEST }}"
-          cp "${TARGET_PATH}/firmware_new.zip" "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}.zip"
+          echo "  Installing new version as $VERSION_LATEST"
+          cp "${TARGET_PATH}/firmware_new.zip" "${FIRMWARE_PREFIX}_$VERSION_LATEST.zip"
           
           echo "✅ Final firmware collection:"
           ls -lh *.zip 2>/dev/null || echo "No firmware files found"
@@ -626,7 +620,7 @@ jobs:
             fi
           done
           
-          echo "FIRMWARE=${{ env.ARTIFACT_DIR }}" >> $GITHUB_ENV
+          echo "FIRMWARE=$ARTIFACT_DIR" >> $GITHUB_ENV
           echo "status=success" >> $GITHUB_OUTPUT
           
           echo "::endgroup::"
@@ -640,10 +634,10 @@ jobs:
         run: |
           echo "::group::📝 Release Notes Generation"
           
-          OP_OWNER=$(echo "${{ env.OP_URL }}" | cut -d'/' -f4)
-          OP_NAME=$(echo "${{ env.OP_URL }}" | cut -d'/' -f5 | cut -d'.' -f1)
-          QMODEM_OWNER=$(echo "${{ env.QMODEM_URL }}" | cut -d'/' -f4)
-          QMODEM_NAME=$(echo "${{ env.QMODEM_URL }}" | cut -d'/' -f5 | cut -d'.' -f1)
+          OP_OWNER=$(echo "$OP_URL" | cut -d'/' -f4)
+          OP_NAME=$(echo "$OP_URL" | cut -d'/' -f5 | cut -d'.' -f1)
+          QMODEM_OWNER=$(echo "$QMODEM_URL" | cut -d'/' -f4)
+          QMODEM_NAME=$(echo "$QMODEM_URL" | cut -d'/' -f5 | cut -d'.' -f1)
           
           RELEASE_NOTE_FILE="release_notes.md"
           
@@ -654,7 +648,7 @@ jobs:
             echo ""
             echo "| Property | Value |"
             echo "|----------|-------|"
-            echo "| 🏷️ Build Type | \`${{ env.BUILD_TYPE }}\` |"
+            echo "| 🏷️ Build Type | \`$BUILD_TYPE\` |"
             echo "| 📅 Build Date | $(date '+%Y-%m-%d %H:%M:%S %Z') |"
             echo "| 🎯 Trigger | ${{ github.event_name }} |"
             echo "| 🔧 Runner | Ubuntu 22.04 |"
@@ -664,21 +658,21 @@ jobs:
             echo ""
             
             # Check available firmware versions
-            cd "${{ env.ARTIFACT_DIR }}"
+            cd "$ARTIFACT_DIR"
             
-            if [ -f "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}.zip" ]; then
-              latest_size=$(ls -lh "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}.zip" | awk '{print $5}')
-              echo "- 🆕 **${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}.zip** (Latest) - $latest_size"
+            if [ -f "${FIRMWARE_PREFIX}_$VERSION_LATEST.zip" ]; then
+              latest_size=$(ls -lh "${FIRMWARE_PREFIX}_$VERSION_LATEST.zip" | awk '{print $5}')
+              echo "- 🆕 **${FIRMWARE_PREFIX}_$VERSION_LATEST.zip** (Latest) - $latest_size"
             fi
             
-            if [ -f "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_PREVIOUS }}.zip" ]; then
-              prev_size=$(ls -lh "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_PREVIOUS }}.zip" | awk '{print $5}')
-              echo "- 📦 **${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_PREVIOUS }}.zip** (Previous) - $prev_size"
+            if [ -f "${FIRMWARE_PREFIX}_$VERSION_PREVIOUS.zip" ]; then
+              prev_size=$(ls -lh "${FIRMWARE_PREFIX}_$VERSION_PREVIOUS.zip" | awk '{print $5}')
+              echo "- 📦 **${FIRMWARE_PREFIX}_$VERSION_PREVIOUS.zip** (Previous) - $prev_size"
             fi
             
-            if [ -f "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_OLDEST }}.zip" ]; then
-              old_size=$(ls -lh "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_OLDEST }}.zip" | awk '{print $5}')
-              echo "- 📦 **${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_OLDEST }}.zip** (Archive) - $old_size"
+            if [ -f "${FIRMWARE_PREFIX}_$VERSION_OLDEST.zip" ]; then
+              old_size=$(ls -lh "${FIRMWARE_PREFIX}_$VERSION_OLDEST.zip" | awk '{print $5}')
+              echo "- 📦 **${FIRMWARE_PREFIX}_$VERSION_OLDEST.zip** (Archive) - $old_size"
             fi
             
             echo ""
@@ -697,7 +691,7 @@ jobs:
               echo ""
               
               if [ -f "${prefix}_updates_001.txt" ]; then
-                echo "#### 📝 Latest Updates (${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }})"
+                echo "#### 📝 Latest Updates (${FIRMWARE_PREFIX}_$VERSION_LATEST)"
                 echo ""
                 
                 # Skip header lines and process commit records
@@ -724,10 +718,10 @@ jobs:
             }
             
             # Process OP repository updates
-            process_update_records "op" "OP Repository (coolsnowwolf/lede)" "${{ env.OP_URL }}"
+            process_update_records "op" "OP Repository (coolsnowwolf/lede)" "$OP_URL"
             
             # Process QModem repository updates
-            process_update_records "qmodem" "QModem Repository (FUjr/QModem)" "${{ env.QMODEM_URL }}"
+            process_update_records "qmodem" "QModem Repository (FUjr/QModem)" "$QMODEM_URL"
             
             echo "## 💾 Installation Instructions"
             echo ""
@@ -794,11 +788,11 @@ jobs:
           git config --local user.name "GitHub Actions [Build Bot]"
           
           # Check out or create config branch
-          if git rev-parse --verify origin/${{ env.CONFIG_BRANCH }} >/dev/null 2>&1; then
-            git fetch origin ${{ env.CONFIG_BRANCH }}
-            git checkout ${{ env.CONFIG_BRANCH }}
+          if git rev-parse --verify origin/$CONFIG_BRANCH >/dev/null 2>&1; then
+            git fetch origin $CONFIG_BRANCH
+            git checkout $CONFIG_BRANCH
           else
-            git checkout --orphan ${{ env.CONFIG_BRANCH }}
+            git checkout --orphan $CONFIG_BRANCH
             git rm -rf . 2>/dev/null || true
             echo "# Configuration Storage Branch" > README.md
             echo "This branch stores configuration files for the workflows." >> README.md
@@ -814,7 +808,7 @@ jobs:
             fi
           done
           
-          git checkout ${{ env.CONFIG_BRANCH }}
+          git checkout $CONFIG_BRANCH
           for file in op_updates_*.txt qmodem_updates_*.txt; do
             if [ -f "/tmp/$file" ]; then
               cp "/tmp/$file" "$file"
@@ -833,7 +827,7 @@ jobs:
             commit_msg="🏗️ Update build configuration records
 
             Build Information:
-            - Type: ${{ env.BUILD_TYPE }}
+            - Type: $BUILD_TYPE
             - Trigger: ${{ github.event_name }}
             - Status: ${{ steps.build_status.outputs.status || 'unknown' }}
             - Date: $(date -Iseconds)
@@ -844,7 +838,7 @@ jobs:
             Auto-generated by: ${{ github.workflow }} #${{ github.run_number }}"
             
             git commit -m "$commit_msg"
-            git push origin ${{ env.CONFIG_BRANCH }}
+            git push origin $CONFIG_BRANCH
             
             echo "✅ Configuration updates committed and pushed to config branch"
           fi
@@ -899,7 +893,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🏷️ Build Type | ${{ env.BUILD_TYPE }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏷️ Build Type | $BUILD_TYPE |" >> $GITHUB_STEP_SUMMARY
           echo "| 📅 Build Date | $(date '+%Y-%m-%d %H:%M:%S %Z') |" >> $GITHUB_STEP_SUMMARY
           echo "| 🎯 Trigger | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔧 Repository | ${{ github.repository }} |" >> $GITHUB_STEP_SUMMARY
@@ -913,7 +907,7 @@ jobs:
             echo "The following firmware files have been generated:" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             
-            cd "${{ env.ARTIFACT_DIR }}" 2>/dev/null || cd .
+            cd "$ARTIFACT_DIR" 2>/dev/null || cd .
             for zip_file in *.zip 2>/dev/null; do
               if [ -f "$zip_file" ]; then
                 file_size=$(ls -lh "$zip_file" | awk '{print $5}')
@@ -928,11 +922,11 @@ jobs:
           echo "## 🚀 Next Steps" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          if [ "${{ env.UPLOAD_RELEASE }}" = "true" ] && [ "${{ steps.organize.outputs.status }}" = "success" ]; then
+          if [ "$UPLOAD_RELEASE" = "true" ] && [ "${{ steps.organize.outputs.status }}" = "success" ]; then
             echo "1. 📥 **Download** firmware from the release page" >> $GITHUB_STEP_SUMMARY
             echo "2. 🔍 **Verify** the firmware integrity" >> $GITHUB_STEP_SUMMARY
             echo "3. 📱 **Flash** to your device following proper procedures" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ env.UPLOAD_FIRMWARE }}" = "true" ] && [ "${{ steps.organize.outputs.status }}" = "success" ]; then
+          elif [ "$UPLOAD_FIRMWARE" = "true" ] && [ "${{ steps.organize.outputs.status }}" = "success" ]; then
             echo "1. 📥 **Download** firmware from the artifacts section" >> $GITHUB_STEP_SUMMARY
             echo "2. 🔍 **Verify** the firmware integrity" >> $GITHUB_STEP_SUMMARY
             echo "3. 📱 **Flash** to your device following proper procedures" >> $GITHUB_STEP_SUMMARY
