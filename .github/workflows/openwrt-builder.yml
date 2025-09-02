@@ -73,6 +73,8 @@ jobs:
               [[ -z $key ]] && continue
               # Remove quotes from value and export
               value=$(echo "$value" | sed 's/^"\(.*\)"$/\1/')
+              # Skip empty values
+              [[ -z $value ]] && continue
               export "$key=$value"
               echo "$key=$value" >> $GITHUB_ENV
             done < .github/workflows/config.env
@@ -81,6 +83,12 @@ jobs:
             echo "❌ Configuration file not found!"
             exit 1
           fi
+          
+          # Debug: Show loaded environment variables
+          echo "📋 Loaded configuration variables:"
+          echo "  TZ: '$TZ'"
+          echo "  OP_URL: '$OP_URL'"
+          echo "  OP_BRANCH: '$OP_BRANCH'"
           
           # Set dynamic environment variables
           echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && 'manual' || 'auto' }}" >> $GITHUB_ENV
