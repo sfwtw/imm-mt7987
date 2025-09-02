@@ -1,0 +1,4 @@
+# OP Repository Last Tracked Commit
+# This file stores the last successfully checked commit hash for https://github.com/sfwtw/imm-mt7987
+# Last Updated: 2025-09-02 10:51:38 UTC
+0133dbe45d6869ecc5f61668935d4ac508406b78
