@@ -1,0 +1,459 @@
+name: 🔍 Repository Update Checker
+
+# ================================================================================
+# Environment Configuration
+# ================================================================================
+env:
+  # Repository URLs and Branches
+  OP_URL: https://github.com/coolsnowwolf/lede
+  OP_BRANCH: master
+  QMODEM_URL: https://github.com/FUjr/QModem
+  QMODEM_BRANCH: main
+  
+  # Configuration Branch and Paths
+  CONFIG_BRANCH: config-data
+  OP_LAST_COMMIT_FILE: op_last_commit.txt
+  QMODEM_LAST_COMMIT_FILE: qmodem_last_commit.txt
+  
+  # System Settings
+  TZ: Asia/Shanghai
+  GITHUB_TOKEN: ${{ secrets.TOKEN }}
+
+# ================================================================================
+# Trigger Configuration
+# ================================================================================
+on:
+  workflow_dispatch:
+    inputs:
+      force_build:
+        description: '🚀 Force trigger build even without updates'
+        required: false
+        default: 'false'
+        type: boolean
+      check_repo:
+        description: '📂 Repository to check (all/op/qmodem)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - op
+        - qmodem
+  schedule:
+    - cron: '0 */12 * * *'  # Every 12 hours
+
+# ================================================================================
+# Jobs Configuration
+# ================================================================================
+jobs:
+  update_checker:
+    name: 🔍 Repository Update Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    outputs:
+      has_updates: ${{ steps.check_updates.outputs.has_updates }}
+      op_updated: ${{ steps.check_updates.outputs.op_updated }}
+      qmodem_updated: ${{ steps.check_updates.outputs.qmodem_updated }}
+    
+    steps:
+      # ============================================================================
+      # Preparation Phase
+      # ============================================================================
+      - name: 🚀 Initialize Workspace
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ env.GITHUB_TOKEN }}
+
+      - name: 🛠️ Setup Environment & Config Branch
+        run: |
+          echo "::group::🔧 Environment Setup"
+          
+          # Setup Git configuration for commits
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions Bot"
+          
+          # Create and checkout config branch if it doesn't exist
+          if git rev-parse --verify origin/${{ env.CONFIG_BRANCH }} >/dev/null 2>&1; then
+            echo "📂 Config branch exists, checking out..."
+            git fetch origin ${{ env.CONFIG_BRANCH }}
+            git checkout ${{ env.CONFIG_BRANCH }}
+          else
+            echo "🆕 Creating new config branch..."
+            git checkout --orphan ${{ env.CONFIG_BRANCH }}
+            git rm -rf . 2>/dev/null || true
+            echo "# Configuration Storage Branch" > README.md
+            echo "This branch stores configuration files for the workflows." >> README.md
+            git add README.md
+            git commit -m "🎯 Initialize configuration storage branch"
+            git push origin ${{ env.CONFIG_BRANCH }}
+          fi
+          
+          # Display environment info
+          echo "📅 Check Time: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+          echo "🔧 Runner: $(uname -a)"
+          echo "📂 Working Directory: $(pwd)"
+          echo "🌿 Current Branch: $(git branch --show-current)"
+          echo "🎯 Check Target: ${{ github.event.inputs.check_repo || 'all' }}"
+          echo "🚀 Force Build: ${{ github.event.inputs.force_build || 'false' }}"
+          
+          echo "::endgroup::"
+
+      # ============================================================================
+      # Update Checking Phase
+      # ============================================================================
+      - name: 🔍 Check Repository Updates
+        id: check_updates
+        run: |
+          set -e
+          
+          echo "::group::🔍 Repository Update Detection"
+          
+          # Initialize variables
+          has_op_updates=false
+          has_qmodem_updates=false
+          check_target="${{ github.event.inputs.check_repo || 'all' }}"
+          force_build="${{ github.event.inputs.force_build || 'false' }}"
+          current_time=$(date '+%Y-%m-%d %H:%M:%S %Z')
+          
+          # Function to check OP repository updates
+          check_op_updates() {
+            echo "::group::📦 OP Repository (coolsnowwolf/lede) Check"
+            
+            if git clone --depth 50 "${{ env.OP_URL }}" -b "${{ env.OP_BRANCH }}" temp_op 2>/dev/null; then
+              cd temp_op
+              
+              # Get current commit information
+              current_commit=$(git rev-parse HEAD)
+              short_commit=$(git rev-parse --short HEAD)
+              commit_author=$(git log -1 --format='%an')
+              commit_date=$(git log -1 --format='%ci')
+              commit_message=$(git log -1 --format='%s')
+              
+              echo "📌 Current Commit: ${current_commit}"
+              echo "✏️  Message: ${commit_message}"
+              echo "👤 Author: ${commit_author}"
+              echo "📅 Date: ${commit_date}"
+              
+              cd ..
+              
+              # Read last tracked commit
+              if [ -f "${{ env.OP_LAST_COMMIT_FILE }}" ]; then
+                last_commit=$(grep -v '^#' "${{ env.OP_LAST_COMMIT_FILE }}" | head -1 | tr -d '[:space:]')
+                echo "📋 Last Tracked: ${last_commit:-'none'}"
+                
+                if [ -n "$last_commit" ] && [ "$last_commit" != "$current_commit" ]; then
+                  echo "🆕 New updates detected for OP repository!"
+                  has_op_updates=true
+                elif [ -z "$last_commit" ]; then
+                  echo "🆕 First time checking OP repository"
+                  has_op_updates=true
+                else
+                  echo "✅ OP repository is up to date"
+                fi
+              else
+                echo "🆕 Configuration file not found - first time check"
+                has_op_updates=true
+              fi
+              
+              # Store current commit info
+              {
+                echo "# OP Repository Last Tracked Commit"
+                echo "# This file stores the last successfully checked commit hash for coolsnowwolf/lede"
+                echo "# Last Updated: ${current_time}"
+                echo "${current_commit}"
+              } > "${{ env.OP_LAST_COMMIT_FILE }}"
+              
+              rm -rf temp_op
+            else
+              echo "⚠️ Failed to clone OP repository - network or access issue"
+              has_op_updates=false
+            fi
+            
+            echo "::endgroup::"
+          }
+          
+          # Function to check QModem repository updates  
+          check_qmodem_updates() {
+            echo "::group::📱 QModem Repository (FUjr/QModem) Check"
+            
+            if git clone --depth 50 "${{ env.QMODEM_URL }}" -b "${{ env.QMODEM_BRANCH }}" temp_qmodem 2>/dev/null; then
+              cd temp_qmodem
+              
+              # Get current commit information
+              current_commit=$(git rev-parse HEAD)
+              short_commit=$(git rev-parse --short HEAD)
+              commit_author=$(git log -1 --format='%an')
+              commit_date=$(git log -1 --format='%ci')
+              commit_message=$(git log -1 --format='%s')
+              
+              echo "📌 Current Commit: ${current_commit}"
+              echo "✏️  Message: ${commit_message}"
+              echo "👤 Author: ${commit_author}"
+              echo "📅 Date: ${commit_date}"
+              
+              cd ..
+              
+              # Read last tracked commit
+              if [ -f "${{ env.QMODEM_LAST_COMMIT_FILE }}" ]; then
+                last_commit=$(grep -v '^#' "${{ env.QMODEM_LAST_COMMIT_FILE }}" | head -1 | tr -d '[:space:]')
+                echo "📋 Last Tracked: ${last_commit:-'none'}"
+                
+                if [ -n "$last_commit" ] && [ "$last_commit" != "$current_commit" ]; then
+                  echo "🆕 New updates detected for QModem repository!"
+                  has_qmodem_updates=true
+                elif [ -z "$last_commit" ]; then
+                  echo "🆕 First time checking QModem repository"
+                  has_qmodem_updates=true
+                else
+                  echo "✅ QModem repository is up to date"
+                fi
+              else
+                echo "🆕 Configuration file not found - first time check"
+                has_qmodem_updates=true
+              fi
+              
+              # Store current commit info
+              {
+                echo "# QModem Repository Last Tracked Commit"
+                echo "# This file stores the last successfully checked commit hash for FUjr/QModem"
+                echo "# Last Updated: ${current_time}"
+                echo "${current_commit}"
+              } > "${{ env.QMODEM_LAST_COMMIT_FILE }}"
+              
+              rm -rf temp_qmodem
+            else
+              echo "⚠️ Failed to clone QModem repository - network or access issue"
+              has_qmodem_updates=false
+            fi
+            
+            echo "::endgroup::"
+          }
+          
+          # Execute checks based on target
+          case "$check_target" in
+            "op")
+              echo "🎯 Checking OP repository only"
+              check_op_updates
+              ;;
+            "qmodem")
+              echo "🎯 Checking QModem repository only"
+              check_qmodem_updates
+              ;;
+            "all"|*)
+              echo "🎯 Checking all repositories"
+              check_op_updates
+              check_qmodem_updates
+              ;;
+          esac
+          
+          # Determine if build should be triggered
+          should_build=false
+          if [ "$force_build" = "true" ]; then
+            echo "🚀 Force build requested"
+            should_build=true
+          elif [ "$has_op_updates" = "true" ] || [ "$has_qmodem_updates" = "true" ]; then
+            echo "🆕 Updates detected - build required"
+            should_build=true
+          else
+            echo "✅ No updates found - build not required"
+          fi
+          
+          # Set outputs
+          echo "has_updates=${should_build}" >> $GITHUB_OUTPUT
+          echo "op_updated=${has_op_updates}" >> $GITHUB_OUTPUT
+          echo "qmodem_updated=${has_qmodem_updates}" >> $GITHUB_OUTPUT
+          
+          # Display final summary
+          echo ""
+          echo "📊 Summary:"
+          echo "  • OP Updates: ${has_op_updates}"
+          echo "  • QModem Updates: ${has_qmodem_updates}"
+          echo "  • Should Build: ${should_build}"
+          echo "  • Force Build: ${force_build}"
+          
+          echo "::endgroup::"
+
+      # ============================================================================
+      # Build Triggering Phase
+      # ============================================================================
+      - name: 🚀 Trigger Build Workflow
+        if: steps.check_updates.outputs.has_updates == 'true'
+        env:
+          GH_TOKEN: ${{ env.GITHUB_TOKEN }}
+        run: |
+          echo "::group::🚀 Build Workflow Trigger"
+          
+          echo "📤 Triggering OpenWrt build workflow..."
+          echo "  • OP Updated: ${{ steps.check_updates.outputs.op_updated }}"
+          echo "  • QModem Updated: ${{ steps.check_updates.outputs.qmodem_updated }}"
+          
+          # Try GitHub CLI first
+          if command -v gh >/dev/null 2>&1; then
+            echo "🔧 Using GitHub CLI..."
+            if gh workflow run openwrt-builder.yml \
+               --field event_type="Source-Code-Update" \
+               --field op_updated="${{ steps.check_updates.outputs.op_updated }}" \
+               --field qmodem_updated="${{ steps.check_updates.outputs.qmodem_updated }}"; then
+              echo "✅ Successfully triggered build via GitHub CLI"
+            else
+              echo "⚠️ GitHub CLI failed, trying API..."
+              use_api=true
+            fi
+          else
+            echo "🔧 GitHub CLI not available, using API..."
+            use_api=true
+          fi
+          
+          # Fallback to API if needed
+          if [ "${use_api:-false}" = "true" ]; then
+            response=$(curl -s -w "\n%{http_code}" -X POST \
+              "https://api.github.com/repos/${{ github.repository }}/dispatches" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -H "Authorization: token ${{ env.GITHUB_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "event_type": "Source-Code-Update",
+                "client_payload": {
+                  "op_updated": "${{ steps.check_updates.outputs.op_updated }}",
+                  "qmodem_updated": "${{ steps.check_updates.outputs.qmodem_updated }}",
+                  "trigger_time": "'$(date -Iseconds)'",
+                  "triggered_by": "update-checker"
+                }
+              }')
+            
+            http_code=$(echo "$response" | tail -n1)
+            if [ "$http_code" = "204" ]; then
+              echo "✅ Successfully triggered build via API"
+            else
+              echo "❌ Failed to trigger build workflow"
+              echo "HTTP Code: $http_code"
+              echo "Response: $(echo "$response" | head -n -1)"
+              exit 1
+            fi
+          fi
+          
+          echo "::endgroup::"
+
+      # ============================================================================
+      # Configuration Commit Phase
+      # ============================================================================
+      - name: 💾 Commit Configuration Updates
+        if: always() && !cancelled()
+        run: |
+          echo "::group::💾 Configuration File Updates"
+          
+          # Make sure we're on the config branch
+          git checkout ${{ env.CONFIG_BRANCH }} 2>/dev/null || git checkout -b ${{ env.CONFIG_BRANCH }}
+          
+          # Check if there are any changes to commit
+          git add .
+          
+          if git diff --staged --quiet; then
+            echo "📝 No configuration changes to commit"
+          else
+            echo "📝 Committing configuration updates..."
+            
+            # Create detailed commit message
+            commit_msg="🔍 Update repository tracking configuration
+            
+            Updated by: Update Checker Workflow
+            Timestamp: $(date -Iseconds)
+            Trigger: ${{ github.event_name }}
+            
+            Changes:
+            - Updated last commit tracking files
+            - Refreshed repository status records
+            "
+            
+            git commit -m "$commit_msg"
+            git push origin ${{ env.CONFIG_BRANCH }}
+            
+            echo "✅ Configuration updates committed and pushed to config branch"
+          fi
+          
+          echo "::endgroup::"
+
+      # ============================================================================
+      # Cleanup and Maintenance Phase  
+      # ============================================================================
+      - name: 🧹 Cleanup Old Workflow Runs
+        if: always()
+        uses: Mattraks/delete-workflow-runs@v2
+        continue-on-error: true
+        with:
+          token: ${{ env.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 7
+          keep_minimum_runs: 5
+
+      # ============================================================================
+      # Summary Generation Phase
+      # ============================================================================
+      - name: 📊 Generate Workflow Summary
+        if: always()
+        run: |
+          echo "# 🔍 Repository Update Checker Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Status Overview
+          echo "## 📋 Check Overview" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🕐 Check Time | $(date '+%Y-%m-%d %H:%M:%S %Z') |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎯 Target | ${{ github.event.inputs.check_repo || 'all' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚀 Force Build | ${{ github.event.inputs.force_build || 'false' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏃 Trigger | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Repository Status
+          echo "## 📦 Repository Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Repository | Status | Updates | Config File |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|---------|-------------|" >> $GITHUB_STEP_SUMMARY
+          
+          # OP Repository Status
+          if [ -f "${{ env.OP_LAST_COMMIT_FILE }}" ]; then
+            op_status="✅ Tracked"
+            op_config="📄 Present"
+          else
+            op_status="⚠️ Not Tracked"
+            op_config="❌ Missing"
+          fi
+          echo "| 🔧 OP (coolsnowwolf/lede) | $op_status | ${{ steps.check_updates.outputs.op_updated || 'N/A' }} | $op_config |" >> $GITHUB_STEP_SUMMARY
+          
+          # QModem Repository Status  
+          if [ -f "${{ env.QMODEM_LAST_COMMIT_FILE }}" ]; then
+            qmodem_status="✅ Tracked"
+            qmodem_config="📄 Present"
+          else
+            qmodem_status="⚠️ Not Tracked"
+            qmodem_config="❌ Missing"
+          fi
+          echo "| 📱 QModem (FUjr/QModem) | $qmodem_status | ${{ steps.check_updates.outputs.qmodem_updated || 'N/A' }} | $qmodem_config |" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Results
+          echo "## 🎯 Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.check_updates.outputs.has_updates }}" = "true" ]; then
+            echo "### ✅ Build Triggered" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The build workflow has been triggered due to detected updates or manual request." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Update Details:**" >> $GITHUB_STEP_SUMMARY
+            echo "- OP Repository: ${{ steps.check_updates.outputs.op_updated || 'No change' }}" >> $GITHUB_STEP_SUMMARY  
+            echo "- QModem Repository: ${{ steps.check_updates.outputs.qmodem_updated || 'No change' }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ℹ️ No Build Required" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No repository updates detected and no manual build requested." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Automated check completed at $(date '+%Y-%m-%d %H:%M:%S %Z')*" >> $GITHUB_STEP_SUMMARY

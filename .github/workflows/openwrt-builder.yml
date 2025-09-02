@@ -1,0 +1,945 @@
+#
+# https://github.com/P3TERX/Actions-OpenWrt
+#
+# File: .github/workflows/openwrt-builder.yml
+# Description: Build OpenWrt using GitHub Actions
+#
+# Copyright (c) 2019-2024 P3TERX <https://p3terx.com>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+#
+
+name: 🚀 OpenWrt Builder
+
+# ================================================================================
+# Environment Configuration
+# ================================================================================
+env:
+  # Repository Configuration
+  OP_URL: https://github.com/coolsnowwolf/lede
+  OP_BRANCH: master
+  QMODEM_URL: https://github.com/FUjr/QModem
+  QMODEM_BRANCH: main
+  
+  # Build Configuration Files
+  FEEDS_CONF: feeds.conf.default
+  CONFIG_FILE: .config
+  DIY_P1_SH: diy-part1.sh
+  DIY_P2_SH: diy-part2.sh
+  
+  # Upload Settings
+  UPLOAD_BIN_DIR: false
+  UPLOAD_FIRMWARE: true
+  UPLOAD_RELEASE: true
+  
+  # Version and Release Configuration
+  RELEASE_TAG: 'Lede-Releases'
+  FIRMWARE_PREFIX: 'lede'
+  VERSION_LATEST: '001'
+  VERSION_PREVIOUS: '002'
+  VERSION_OLDEST: '003'
+  ARTIFACT_DIR: './firmware_archives'
+  
+  # System Configuration
+  TZ: Asia/Shanghai
+  BUILD_TYPE: ${{ github.event_name == 'workflow_dispatch' && 'manual' || 'auto' }}
+  
+  # Configuration Branch and Paths  
+  CONFIG_BRANCH: config-data
+  OP_UPDATES_001: op_updates_001.txt
+  OP_UPDATES_002: op_updates_002.txt
+  OP_UPDATES_003: op_updates_003.txt
+  QMODEM_UPDATES_001: qmodem_updates_001.txt
+  QMODEM_UPDATES_002: qmodem_updates_002.txt
+  QMODEM_UPDATES_003: qmodem_updates_003.txt
+
+# ================================================================================
+# Trigger Configuration
+# ================================================================================
+on:
+  repository_dispatch:
+    types: [Source-Code-Update]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: '🛠️ Build Type'
+        required: false
+        default: 'standard'
+        type: choice
+        options:
+        - standard
+        - debug
+        - minimal
+      upload_firmware:
+        description: '📤 Upload Firmware'
+        required: false
+        default: true
+        type: boolean
+      upload_release:
+        description: '🎯 Create Release'
+        required: false
+        default: true
+        type: boolean
+
+# ================================================================================
+# Jobs Configuration
+# ================================================================================
+jobs:
+  build:
+    name: 🏗️ Build OpenWrt Firmware
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    
+    steps:
+      # ============================================================================
+      # Preparation Phase
+      # ============================================================================
+      - name: 🚀 Initialize Build Environment
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: 📁 Setup Configuration Branch
+        run: |
+          echo "::group::🔧 Configuration Branch Setup"
+          
+          # Setup Git configuration
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions Bot"
+          
+          # Check out configuration branch to read existing records
+          if git rev-parse --verify origin/${{ env.CONFIG_BRANCH }} >/dev/null 2>&1; then
+            echo "📂 Config branch exists, checking out..."
+            git fetch origin ${{ env.CONFIG_BRANCH }}
+            git checkout ${{ env.CONFIG_BRANCH }}
+            
+            # Copy config files to main branch working directory for use during build
+            git checkout ${{ github.ref_name }}
+            git show ${{ env.CONFIG_BRANCH }}:op_updates_001.txt > op_updates_001.txt 2>/dev/null || true
+            git show ${{ env.CONFIG_BRANCH }}:op_updates_002.txt > op_updates_002.txt 2>/dev/null || true
+            git show ${{ env.CONFIG_BRANCH }}:op_updates_003.txt > op_updates_003.txt 2>/dev/null || true
+            git show ${{ env.CONFIG_BRANCH }}:qmodem_updates_001.txt > qmodem_updates_001.txt 2>/dev/null || true
+            git show ${{ env.CONFIG_BRANCH }}:qmodem_updates_002.txt > qmodem_updates_002.txt 2>/dev/null || true
+            git show ${{ env.CONFIG_BRANCH }}:qmodem_updates_003.txt > qmodem_updates_003.txt 2>/dev/null || true
+          else
+            echo "⚠️ Config branch does not exist, will be created later"
+          fi
+          
+          echo "✅ Configuration branch setup completed"
+          echo "::endgroup::"
+
+      - name: 📋 Display Build Information
+        run: |
+          echo "::group::🔍 Build Configuration"
+          echo "📅 Build Time: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+          echo "🏷️ Build Type: ${{ env.BUILD_TYPE }}"
+          echo "🎯 Trigger: ${{ github.event_name }}"
+          echo "🔧 Runner: $(uname -a)"
+          echo "📂 Working Directory: $(pwd)"
+          echo "🌐 Repository: ${{ github.repository }}"
+          echo "📊 Workflow: ${{ github.workflow }}"
+          echo "::endgroup::"
+
+      # ============================================================================
+      # System Setup Phase
+      # ============================================================================
+      - name: 🛠️ Setup Build Dependencies
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          echo "::group::🔧 System Preparation"
+          
+          echo "🧹 Cleaning up system packages..."
+          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /etc/mysql /etc/php /usr/local/lib/android /opt/ghc
+          
+          echo "📦 Updating package lists..."
+          sudo -E apt-get -qq update
+          
+          echo "⚙️ Installing build dependencies..."
+          if [ -f "$GITHUB_WORKSPACE/depends/ubuntu-22.04" ]; then
+            sudo -E apt-get -qq install $(cat $GITHUB_WORKSPACE/depends/ubuntu-22.04)
+          else
+            echo "⚠️ Dependencies file not found, using default packages"
+            sudo -E apt-get -qq install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev file wget
+          fi
+          
+          echo "🐍 Setting up Python environment..."
+          if ! command -v pip3 >/dev/null 2>&1; then
+            wget -q https://bootstrap.pypa.io/pip/3.6/get-pip.py
+            sudo python3 get-pip.py
+            sudo rm -f get-pip.py
+          fi
+          sudo pip3 install pyelftools
+          
+          echo "::endgroup::"
+          
+          echo "::group::🧹 System Cleanup"
+          
+          echo "🐳 Cleaning Docker images..."
+          docker rmi $(docker images -q) 2>/dev/null || true
+          docker image prune -a -f 2>/dev/null || true
+          
+          echo "🗑️ Removing unnecessary packages..."
+          sudo -E apt-get -y purge azure-cli* docker* ghc* zulu* hhvm* llvm* firefox* google* dotnet* aspnetcore* powershell* openjdk* adoptopenjdk* mysql* php* mongodb* moby* snap* 2>/dev/null || true
+          sudo -E apt-get -qq autoremove --purge
+          sudo -E apt-get -qq clean
+          
+          echo "🕐 Setting timezone..."
+          sudo timedatectl set-timezone "$TZ"
+          
+          echo "📁 Creating work directory..."
+          sudo mkdir -p /mnt/workdir
+          sudo chown $USER:$GROUPS /mnt/workdir
+          
+          echo "::endgroup::"
+
+      - name: 📊 System Resource Check
+        run: |
+          echo "::group::💻 Hardware Information"
+          
+          echo "🔧 CPU Information:"
+          echo "  Physical CPUs: $(cat /proc/cpuinfo | grep "physical id" | sort | uniq | wc -l)"
+          echo "  CPU Cores: $(cat /proc/cpuinfo | grep name | cut -f2 -d: | uniq -c)"
+          echo ""
+          
+          echo "💾 Memory Information:"
+          echo "  Installed Memory:"
+          sudo lshw -short -C memory | grep GiB 2>/dev/null || echo "  Unable to detect memory details"
+          echo ""
+          
+          echo "💿 Disk Information:"
+          echo "  Available Disks: $(ls /dev/sd* 2>/dev/null | grep -v [1-9] | wc -l)"
+          echo "  Disk Usage:"
+          df -hT $PWD
+          
+          echo "::endgroup::"
+          
+          # Warn about resource constraints
+          available_space=$(df . | tail -1 | awk '{print $4}')
+          if [ "$available_space" -lt 20971520 ]; then  # Less than 20GB
+            echo "⚠️ Warning: Low disk space detected! Available: $(df -h . | tail -1 | awk '{print $4}')"
+            echo "::warning::Low disk space may cause build failures"
+          fi
+
+      # ============================================================================
+      # Source Code Phase
+      # ============================================================================
+      - name: 📥 Clone Source Code
+        working-directory: /mnt/workdir
+        run: |
+          echo "::group::📦 Source Code Acquisition"
+          
+          echo "💿 Available space before clone:"
+          df -hT $PWD
+          
+          echo "🔄 Cloning OpenWrt source code..."
+          echo "  Repository: ${{ env.OP_URL }}"
+          echo "  Branch: ${{ env.OP_BRANCH }}"
+          
+          if git clone --depth 1 "${{ env.OP_URL }}" -b "${{ env.OP_BRANCH }}" openwrt; then
+            echo "✅ Successfully cloned OpenWrt source"
+          else
+            echo "❌ Failed to clone OpenWrt source"
+            exit 1
+          fi
+          
+          # Create symbolic link
+          ln -sf /mnt/workdir/openwrt $GITHUB_WORKSPACE/openwrt
+          
+          echo "📊 Source code statistics:"
+          cd openwrt
+          echo "  Commit: $(git rev-parse HEAD)"
+          echo "  Author: $(git log -1 --format='%an <%ae>')"
+          echo "  Date: $(git log -1 --format='%ci')"
+          echo "  Message: $(git log -1 --format='%s')"
+          
+          echo "💿 Space after clone:"
+          df -hT $PWD
+          
+          echo "::endgroup::"
+
+      # ============================================================================
+      # Configuration Tracking Phase
+      # ============================================================================
+      - name: 📋 Update Build Configuration Records
+        run: |
+          echo "::group::📝 Configuration Management"
+          
+          # Get current build information
+          current_time=$(date -Iseconds)
+          build_type="${{ env.BUILD_TYPE }}"
+          
+          echo "🕐 Build Time: $current_time"
+          echo "🏷️ Build Type: $build_type"
+          
+          # Function to update repository records
+          update_repo_records() {
+            local repo_url="$1"
+            local repo_branch="$2"
+            local prefix="$3"
+            local display_name="$4"
+            
+            echo "📦 Updating records for $display_name..."
+            
+            # Clone repository to get commit info
+            if git clone --depth 10 "$repo_url" -b "$repo_branch" "temp_${prefix}"; then
+              cd "temp_${prefix}"
+              
+              # Get commit information
+              git log --oneline -10 --format="%H|%h|%s|%an|%ci" > "../commit_list.tmp"
+              current_commit=$(git rev-parse HEAD)
+              
+              cd ..
+              rm -rf "temp_${prefix}"
+              
+              # Rotate update files (003 <- 002 <- 001 <- new)
+              if [ -f "${prefix}_updates_002.txt" ]; then
+                cp "${prefix}_updates_002.txt" "${prefix}_updates_003.txt"
+              fi
+              
+              if [ -f "${prefix}_updates_001.txt" ]; then
+                cp "${prefix}_updates_001.txt" "${prefix}_updates_002.txt"
+              fi
+              
+              # Create new update record
+              {
+                echo "# $display_name Update Record - Version 001 (Latest)"
+                echo "# This file stores the latest update information for $repo_url"
+                echo "# Format: commit_hash|short_hash|subject|author|timestamp"
+                echo "# Generated: $current_time"
+                echo "# Build Type: $build_type"
+                echo "# Repository Type: $display_name"
+                echo ""
+                echo "编译时间: $current_time"
+                echo "编译类型: $build_type"
+                echo "仓库类型: $display_name"
+                echo "更新内容:"
+                cat "commit_list.tmp"
+              } > "${prefix}_updates_001.txt"
+              
+              rm -f "commit_list.tmp"
+              echo "✅ Updated $display_name records"
+            else
+              echo "⚠️ Failed to clone $display_name repository for record update"
+            fi
+          }
+          
+          # Update OP repository records
+          update_repo_records "${{ env.OP_URL }}" "${{ env.OP_BRANCH }}" "op" "OP (coolsnowwolf/lede)"
+          
+          
+          echo "::endgroup::"
+
+      # ============================================================================
+      # Build Configuration Phase
+      # ============================================================================
+      - name: 🔧 QModem Integration
+        working-directory: /mnt/workdir/openwrt
+        run: |
+          echo "::group::📱 QModem Repository Integration"
+          
+          echo "🔄 Cloning QModem repository..."
+          if git clone "${{ env.QMODEM_URL }}" -b "${{ env.QMODEM_BRANCH }}" qmodem_temp; then
+            echo "✅ Successfully cloned QModem repository"
+            
+            # Integrate QModem files if needed
+            echo "📦 QModem commit information:"
+            cd qmodem_temp
+            echo "  Commit: $(git rev-parse HEAD)"
+            echo "  Author: $(git log -1 --format='%an <%ae>')"
+            echo "  Date: $(git log -1 --format='%ci')"
+            echo "  Message: $(git log -1 --format='%s')"
+            
+            # Copy relevant files if they exist
+            if [ -d "package" ]; then
+              echo "📦 Integrating QModem packages..."
+              cp -r package/* ../package/ 2>/dev/null || echo "No packages to copy"
+            fi
+            
+            cd ..
+            rm -rf qmodem_temp
+          else
+            echo "⚠️ Failed to clone QModem repository - continuing without it"
+          fi
+          
+          echo "::endgroup::"
+
+      - name: 🍽️ Configure Feeds
+        working-directory: /mnt/workdir/openwrt
+        run: |
+          echo "::group::🍽️ Feed Configuration"
+          
+          # Load custom feeds configuration if it exists
+          if [ -f "$GITHUB_WORKSPACE/${{ env.FEEDS_CONF }}" ]; then
+            echo "📋 Loading custom feeds configuration..."
+            cp "$GITHUB_WORKSPACE/${{ env.FEEDS_CONF }}" feeds.conf.default
+            echo "✅ Custom feeds configuration loaded"
+          else
+            echo "📋 Using default feeds configuration"
+          fi
+          
+          # Display feeds configuration
+          echo "📄 Current feeds configuration:"
+          cat feeds.conf.default
+          
+          echo "::endgroup::"
+
+      - name: 🎛️ Install DIY Scripts
+        run: |
+          echo "::group::🎛️ DIY Script Installation"
+          
+          # Install DIY script part 1 (before feeds update)
+          if [ -f "${{ env.DIY_P1_SH }}" ]; then
+            echo "🔧 Running DIY script part 1..."
+            chmod +x "${{ env.DIY_P1_SH }}"
+            cd /mnt/workdir/openwrt
+            $GITHUB_WORKSPACE/${{ env.DIY_P1_SH }}
+            echo "✅ DIY script part 1 completed"
+          else
+            echo "📝 No DIY script part 1 found"
+          fi
+          
+          echo "::endgroup::"
+
+      - name: 📦 Update and Install Feeds
+        working-directory: /mnt/workdir/openwrt
+        run: |
+          echo "::group::📦 Feed Management"
+          
+          echo "🔄 Updating feeds..."
+          ./scripts/feeds update -a
+          
+          echo "⚙️ Installing feeds..."
+          ./scripts/feeds install -a
+          
+          echo "📊 Feed statistics:"
+          ./scripts/feeds list | wc -l | xargs echo "Total packages:"
+          
+          echo "::endgroup::"
+
+      - name: ⚙️ Load Build Configuration
+        run: |
+          echo "::group::⚙️ Build Configuration"
+          
+          # Load custom configuration
+          if [ -f "${{ env.CONFIG_FILE }}" ]; then
+            echo "📋 Loading custom build configuration..."
+            cp "${{ env.CONFIG_FILE }}" /mnt/workdir/openwrt/.config
+            echo "✅ Custom configuration loaded"
+          else
+            echo "⚠️ No custom configuration found - using defaults"
+            echo "CONFIG_TARGET_x86=y" > /mnt/workdir/openwrt/.config
+            echo "CONFIG_TARGET_x86_64=y" >> /mnt/workdir/openwrt/.config
+          fi
+          
+          # Run DIY script part 2 (after feeds installation)
+          if [ -f "${{ env.DIY_P2_SH }}" ]; then
+            echo "🔧 Running DIY script part 2..."
+            chmod +x "${{ env.DIY_P2_SH }}"
+            cd /mnt/workdir/openwrt
+            $GITHUB_WORKSPACE/${{ env.DIY_P2_SH }}
+            echo "✅ DIY script part 2 completed"
+          else
+            echo "📝 No DIY script part 2 found"
+          fi
+          
+          echo "::endgroup::"
+
+      # ============================================================================
+      # Build Preparation Phase
+      # ============================================================================
+      - name: 📥 Download Packages
+        working-directory: /mnt/workdir/openwrt
+        run: |
+          echo "::group::📥 Package Download"
+          
+          echo "🔧 Generating final configuration..."
+          make defconfig
+          
+          echo "📦 Downloading packages..."
+          make download -j8
+          
+          # Check for download failures
+          find dl -size -1024c -exec ls -l {} \; | tee download_failures.log
+          if [ -s download_failures.log ]; then
+            echo "⚠️ Some packages failed to download:"
+            cat download_failures.log
+            echo "::warning::Some packages failed to download - build may fail"
+          else
+            echo "✅ All packages downloaded successfully"
+          fi
+          
+          echo "💿 Storage usage after download:"
+          df -hT $PWD
+          
+          echo "::endgroup::"
+
+      # ============================================================================
+      # Main Build Phase
+      # ============================================================================
+      - name: 🏗️ Compile Firmware
+        working-directory: /mnt/workdir/openwrt
+        run: |
+          echo "::group::🏗️ Firmware Compilation"
+          
+          build_start_time=$(date +%s)
+          echo "🚀 Starting firmware compilation at $(date)"
+          echo "🔧 Build Type: ${{ env.BUILD_TYPE }}"
+          
+          # Determine build parameters based on type
+          case "${{ github.event.inputs.build_type || 'standard' }}" in
+            "debug")
+              echo "🐛 Debug build - single threaded with verbose output"
+              make V=s -j1
+              ;;
+            "minimal")
+              echo "⚡ Minimal build - reduced features"
+              make -j$(($(nproc)+1))
+              ;;
+            *)
+              echo "🏭 Standard build - optimized for speed"
+              make -j$(($(nproc)+1)) || make -j1 V=s
+              ;;
+          esac
+          
+          build_end_time=$(date +%s)
+          build_duration=$((build_end_time - build_start_time))
+          echo "⏱️ Build completed in $(($build_duration / 60)) minutes and $(($build_duration % 60)) seconds"
+          
+          echo "📊 Build statistics:"
+          echo "  Start: $(date -d @$build_start_time)"
+          echo "  End: $(date -d @$build_end_time)"
+          echo "  Duration: $(($build_duration / 60))m $(($build_duration % 60))s"
+          
+          echo "💿 Final storage usage:"
+          df -hT $PWD
+          
+          echo "::endgroup::"
+
+      # ============================================================================
+      # Post-Build Phase
+      # ============================================================================
+      - name: 📊 Build Status Check
+        id: build_status
+        working-directory: /mnt/workdir/openwrt
+        run: |
+          echo "::group::📊 Build Result Analysis"
+          
+          if [ -d "bin/targets" ]; then
+            echo "✅ Build successful - firmware files generated"
+            
+            echo "📦 Generated firmware files:"
+            find bin/targets -name "*.bin" -o -name "*.img" -o -name "*.vmdk" | head -10
+            
+            # Count and size of generated files
+            file_count=$(find bin/targets -type f \( -name "*.bin" -o -name "*.img" -o -name "*.vmdk" \) | wc -l)
+            total_size=$(find bin/targets -type f \( -name "*.bin" -o -name "*.img" -o -name "*.vmdk" \) -exec du -c {} + | tail -1 | cut -f1)
+            
+            echo "📈 Build summary:"
+            echo "  Generated files: $file_count"
+            echo "  Total size: $(($total_size / 1024))MB"
+            
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Build failed - no firmware files generated"
+            echo "status=failure" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          echo "::endgroup::"
+
+      - name: 📦 Organize Firmware Files
+        id: organize
+        if: steps.build_status.outputs.status == 'success'
+        run: |
+          echo "::group::📦 Firmware Organization"
+          
+          CURRENT_PATH=$(pwd)
+          
+          # Navigate to firmware directory
+          cd /mnt/workdir/openwrt/bin/targets/*/*
+          TARGET_PATH=$(pwd)
+          echo "📂 Firmware location: ${TARGET_PATH}"
+          
+          # Clean up packages directory
+          rm -rf packages
+          
+          # Create new version directory
+          NEW_VERSION="${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}"
+          mkdir -p "$NEW_VERSION"
+          
+          # Move all firmware files to version directory
+          mv * "$NEW_VERSION/" 2>/dev/null || true
+          
+          # Create compressed archive
+          echo "🗜️ Creating firmware archive..."
+          zip -r "firmware_new.zip" "$NEW_VERSION/"
+          
+          if [ ! -f "firmware_new.zip" ]; then
+            echo "❌ Failed to create firmware archive"
+            echo "status=failure" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          # Prepare archive directory
+          cd "$CURRENT_PATH"
+          mkdir -p "${{ env.ARTIFACT_DIR }}"
+          cd "${{ env.ARTIFACT_DIR }}"
+          
+          echo "📋 Current firmware files:"
+          ls -lh *.zip 2>/dev/null || echo "No existing firmware files"
+          
+          # Version rotation (oldest <- previous <- current <- new)
+          echo "🔄 Performing version rotation..."
+          
+          # Move 002 to 003 (if exists)
+          if [ -f "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_PREVIOUS }}.zip" ]; then
+            echo "  Moving ${{ env.VERSION_PREVIOUS }} → ${{ env.VERSION_OLDEST }}"
+            mv "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_PREVIOUS }}.zip" "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_OLDEST }}.zip"
+          fi
+          
+          # Move 001 to 002 (if exists)
+          if [ -f "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}.zip" ]; then
+            echo "  Moving ${{ env.VERSION_LATEST }} → ${{ env.VERSION_PREVIOUS }}"
+            mv "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}.zip" "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_PREVIOUS }}.zip"
+          fi
+          
+          # Place new version as 001
+          echo "  Installing new version as ${{ env.VERSION_LATEST }}"
+          cp "${TARGET_PATH}/firmware_new.zip" "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}.zip"
+          
+          echo "✅ Final firmware collection:"
+          ls -lh *.zip 2>/dev/null || echo "No firmware files found"
+          
+          # Verify file integrity
+          echo "🔍 Verifying file integrity..."
+          for zip_file in *.zip; do
+            if [ -f "$zip_file" ]; then
+              if unzip -t "$zip_file" >/dev/null 2>&1; then
+                echo "  ✅ $zip_file: OK"
+              else
+                echo "  ❌ $zip_file: Corrupted - removing"
+                rm -f "$zip_file"
+              fi
+            fi
+          done
+          
+          echo "FIRMWARE=${{ env.ARTIFACT_DIR }}" >> $GITHUB_ENV
+          echo "status=success" >> $GITHUB_OUTPUT
+          
+          echo "::endgroup::"
+
+      # ============================================================================
+      # Release Generation Phase
+      # ============================================================================
+      - name: 📝 Generate Release Notes
+        id: release_note
+        if: env.UPLOAD_RELEASE == 'true' && steps.organize.outputs.status == 'success'
+        run: |
+          echo "::group::📝 Release Notes Generation"
+          
+          OP_OWNER=$(echo "${{ env.OP_URL }}" | cut -d'/' -f4)
+          OP_NAME=$(echo "${{ env.OP_URL }}" | cut -d'/' -f5 | cut -d'.' -f1)
+          QMODEM_OWNER=$(echo "${{ env.QMODEM_URL }}" | cut -d'/' -f4)
+          QMODEM_NAME=$(echo "${{ env.QMODEM_URL }}" | cut -d'/' -f5 | cut -d'.' -f1)
+          
+          RELEASE_NOTE_FILE="release_notes.md"
+          
+          {
+            echo "# 🚀 OpenWrt Firmware Release"
+            echo ""
+            echo "## 📋 Build Information"
+            echo ""
+            echo "| Property | Value |"
+            echo "|----------|-------|"
+            echo "| 🏷️ Build Type | \`${{ env.BUILD_TYPE }}\` |"
+            echo "| 📅 Build Date | $(date '+%Y-%m-%d %H:%M:%S %Z') |"
+            echo "| 🎯 Trigger | ${{ github.event_name }} |"
+            echo "| 🔧 Runner | Ubuntu 22.04 |"
+            echo "| 📦 Workflow | ${{ github.workflow }} |"
+            echo ""
+            echo "## 📁 Firmware Versions"
+            echo ""
+            
+            # Check available firmware versions
+            cd "${{ env.ARTIFACT_DIR }}"
+            
+            if [ -f "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}.zip" ]; then
+              latest_size=$(ls -lh "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}.zip" | awk '{print $5}')
+              echo "- 🆕 **${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }}.zip** (Latest) - $latest_size"
+            fi
+            
+            if [ -f "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_PREVIOUS }}.zip" ]; then
+              prev_size=$(ls -lh "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_PREVIOUS }}.zip" | awk '{print $5}')
+              echo "- 📦 **${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_PREVIOUS }}.zip** (Previous) - $prev_size"
+            fi
+            
+            if [ -f "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_OLDEST }}.zip" ]; then
+              old_size=$(ls -lh "${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_OLDEST }}.zip" | awk '{print $5}')
+              echo "- 📦 **${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_OLDEST }}.zip** (Archive) - $old_size"
+            fi
+            
+            echo ""
+            echo "## 📊 Repository Updates"
+            echo ""
+            
+            cd "$GITHUB_WORKSPACE"
+            
+            # Function to process update records
+            process_update_records() {
+              local prefix="$1"
+              local display_name="$2"
+              local repo_url="$3"
+              
+              echo "### 🔧 $display_name"
+              echo ""
+              
+              if [ -f "${prefix}_updates_001.txt" ]; then
+                echo "#### 📝 Latest Updates (${{ env.FIRMWARE_PREFIX }}_${{ env.VERSION_LATEST }})"
+                echo ""
+                
+                # Skip header lines and process commit records
+                while IFS= read -r line; do
+                  if [[ $line == "编译时间:"* ]] || [[ $line == "编译类型:"* ]] || [[ $line == "仓库类型:"* ]]; then
+                    continue
+                  elif [[ $line == "更新内容:" ]]; then
+                    echo "**Commit History:**"
+                    echo ""
+                  else
+                    if [[ $line =~ ^[a-f0-9]{40}\|[a-f0-9]{7}\| ]]; then
+                      IFS='|' read -r full_hash short_hash subject author timestamp <<< "$line"
+                      if [ -n "$short_hash" ] && [ -n "$subject" ]; then
+                        echo "- [\`$short_hash\`]($repo_url/commit/$full_hash) $subject - *$author*"
+                      fi
+                    fi
+                  fi
+                done < "${prefix}_updates_001.txt"
+                echo ""
+              else
+                echo "*No update records available*"
+                echo ""
+              fi
+            }
+            
+            # Process OP repository updates
+            process_update_records "op" "OP Repository (coolsnowwolf/lede)" "${{ env.OP_URL }}"
+            
+            # Process QModem repository updates
+            process_update_records "qmodem" "QModem Repository (FUjr/QModem)" "${{ env.QMODEM_URL }}"
+            
+            echo "## 💾 Installation Instructions"
+            echo ""
+            echo "1. **Download** the appropriate firmware file for your device"
+            echo "2. **Backup** your current configuration if needed"
+            echo "3. **Flash** the firmware using your preferred method:"
+            echo "   - Web interface upgrade"
+            echo "   - TFTP recovery"
+            echo "   - Serial console"
+            echo "4. **Configure** your device after first boot"
+            echo ""
+            echo "## ⚠️ Important Notes"
+            echo ""
+            echo "- This is a **development build** - use at your own risk"
+            echo "- Always backup your current firmware before upgrading"
+            echo "- Check device compatibility before flashing"
+            echo "- Factory reset may be required when upgrading between major versions"
+            echo ""
+            echo "---"
+            echo "*Automatically generated by GitHub Actions on $(date '+%Y-%m-%d %H:%M:%S %Z')*"
+            
+          } > "$RELEASE_NOTE_FILE"
+          
+          echo "✅ Release notes generated successfully"
+          echo "release_note=$RELEASE_NOTE_FILE" >> $GITHUB_OUTPUT
+          
+          echo "::endgroup::"
+
+      # ============================================================================
+      # Upload Phase
+      # ============================================================================
+      - name: 📤 Upload Firmware Artifacts
+        if: env.UPLOAD_FIRMWARE == 'true' && steps.organize.outputs.status == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.FIRMWARE_PREFIX }}_firmware_${{ env.BUILD_TYPE }}_$(date +%Y%m%d_%H%M%S)
+          path: ${{ env.ARTIFACT_DIR }}/*.zip
+          retention-days: 30
+          compression-level: 0  # Files are already compressed
+
+      - name: 🎯 Create GitHub Release
+        if: env.UPLOAD_RELEASE == 'true' && steps.organize.outputs.status == 'success'
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN || secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}_$(date +%Y%m%d_%H%M%S)
+          name: 🚀 OpenWrt Firmware - $(date +%Y-%m-%d)
+          body_path: ${{ steps.release_note.outputs.release_note }}
+          files: ${{ env.ARTIFACT_DIR }}/*.zip
+          draft: false
+          prerelease: ${{ env.BUILD_TYPE == 'debug' }}
+
+      # ============================================================================
+      # Configuration Commit Phase
+      # ============================================================================
+      - name: 💾 Commit Configuration Updates
+        if: always() && !cancelled()
+        run: |
+          echo "::group::💾 Configuration Updates"
+          
+          # Setup git configuration
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions [Build Bot]"
+          
+          # Check out or create config branch
+          if git rev-parse --verify origin/${{ env.CONFIG_BRANCH }} >/dev/null 2>&1; then
+            git fetch origin ${{ env.CONFIG_BRANCH }}
+            git checkout ${{ env.CONFIG_BRANCH }}
+          else
+            git checkout --orphan ${{ env.CONFIG_BRANCH }}
+            git rm -rf . 2>/dev/null || true
+            echo "# Configuration Storage Branch" > README.md
+            echo "This branch stores configuration files for the workflows." >> README.md
+            git add README.md
+            git commit -m "🎯 Initialize configuration storage branch"
+          fi
+          
+          # Copy updated config files to config branch
+          git checkout ${{ github.ref_name }}
+          for file in op_updates_*.txt qmodem_updates_*.txt; do
+            if [ -f "$file" ]; then
+              cp "$file" /tmp/"$file"
+            fi
+          done
+          
+          git checkout ${{ env.CONFIG_BRANCH }}
+          for file in op_updates_*.txt qmodem_updates_*.txt; do
+            if [ -f "/tmp/$file" ]; then
+              cp "/tmp/$file" "$file"
+            fi
+          done
+          
+          # Add and commit configuration files
+          git add *.txt
+          
+          if git diff --staged --quiet; then
+            echo "📝 No configuration changes to commit"
+          else
+            echo "📝 Committing configuration updates..."
+            
+            # Create detailed commit message
+            commit_msg="🏗️ Update build configuration records
+
+            Build Information:
+            - Type: ${{ env.BUILD_TYPE }}
+            - Trigger: ${{ github.event_name }}
+            - Status: ${{ steps.build_status.outputs.status || 'unknown' }}
+            - Date: $(date -Iseconds)
+            
+            Updated Files:
+            $(git diff --staged --name-only | sed 's/^/- /')
+            
+            Auto-generated by: ${{ github.workflow }} #${{ github.run_number }}"
+            
+            git commit -m "$commit_msg"
+            git push origin ${{ env.CONFIG_BRANCH }}
+            
+            echo "✅ Configuration updates committed and pushed to config branch"
+          fi
+          
+          echo "::endgroup::"
+
+      # ============================================================================
+      # Cleanup and Summary Phase
+      # ============================================================================
+      - name: 🧹 Cleanup and Maintenance
+        if: always()
+        run: |
+          echo "::group::🧹 Cleanup Operations"
+          
+          # Clean up temporary directories
+          echo "🗑️ Cleaning temporary files..."
+          rm -rf /tmp/openwrt_* 2>/dev/null || true
+          
+          # Clean up old workflow runs (keep last 10)
+          echo "📊 Workflow cleanup will be handled by retention settings"
+          
+          # Show final disk usage
+          echo "💿 Final disk usage:"
+          df -hT / | head -2
+          
+          echo "::endgroup::"
+
+      - name: 📋 Generate Build Summary
+        if: always()
+        run: |
+          echo "# 🏗️ OpenWrt Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Build Status
+          echo "## 📊 Build Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.build_status.outputs.status }}" = "success" ]; then
+            echo "### ✅ Build Successful" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The firmware has been compiled successfully and is ready for use." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Build Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The build process encountered errors. Please check the logs for details." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Build Information
+          echo "## 📋 Build Details" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏷️ Build Type | ${{ env.BUILD_TYPE }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📅 Build Date | $(date '+%Y-%m-%d %H:%M:%S %Z') |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎯 Trigger | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔧 Repository | ${{ github.repository }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📦 Workflow | ${{ github.workflow }} #${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Files Generated
+          if [ "${{ steps.organize.outputs.status }}" = "success" ]; then
+            echo "## 📦 Generated Files" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The following firmware files have been generated:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            cd "${{ env.ARTIFACT_DIR }}" 2>/dev/null || cd .
+            for zip_file in *.zip 2>/dev/null; do
+              if [ -f "$zip_file" ]; then
+                file_size=$(ls -lh "$zip_file" | awk '{print $5}')
+                echo "- 📁 \`$zip_file\` ($file_size)" >> $GITHUB_STEP_SUMMARY
+              fi
+            done
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Next Steps
+          echo "## 🚀 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ env.UPLOAD_RELEASE }}" = "true" ] && [ "${{ steps.organize.outputs.status }}" = "success" ]; then
+            echo "1. 📥 **Download** firmware from the release page" >> $GITHUB_STEP_SUMMARY
+            echo "2. 🔍 **Verify** the firmware integrity" >> $GITHUB_STEP_SUMMARY
+            echo "3. 📱 **Flash** to your device following proper procedures" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ env.UPLOAD_FIRMWARE }}" = "true" ] && [ "${{ steps.organize.outputs.status }}" = "success" ]; then
+            echo "1. 📥 **Download** firmware from the artifacts section" >> $GITHUB_STEP_SUMMARY
+            echo "2. 🔍 **Verify** the firmware integrity" >> $GITHUB_STEP_SUMMARY
+            echo "3. 📱 **Flash** to your device following proper procedures" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Build completed without uploads enabled" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Build completed at $(date '+%Y-%m-%d %H:%M:%S %Z')*" >> $GITHUB_STEP_SUMMARY
