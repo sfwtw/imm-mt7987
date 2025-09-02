@@ -83,16 +83,9 @@ jobs:
             echo "❌ Configuration file not found!"
             exit 1
           fi
-          
-          # Debug: Show loaded environment variables
-          echo "📋 Loaded configuration variables:"
-          echo "  TZ: '$TZ'"
-          echo "  OP_URL: '$OP_URL'"
-          echo "  OP_BRANCH: '$OP_BRANCH'"
-          
+
           # Set dynamic environment variables
           echo "BUILD_TYPE=${{ github.event_name == 'workflow_dispatch' && 'manual' || 'auto' }}" >> $GITHUB_ENV
-          echo "TZ=$TZ" >> $GITHUB_ENV
           
           # Override upload settings if provided via inputs
           if [ "${{ github.event.inputs.upload_firmware }}" != "" ]; then
@@ -190,7 +183,7 @@ jobs:
           sudo -E apt-get -qq clean
           
           echo "🕐 Setting timezone..."
-          sudo timedatectl set-timezone "$TZ"
+          sudo timedatectl set-timezone "Asia/Shanghai"
           
           echo "📁 Creating work directory..."
           sudo mkdir -p /mnt/workdir
