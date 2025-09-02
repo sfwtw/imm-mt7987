@@ -75,6 +75,16 @@ jobs:
           git config --local user.name "GitHub Actions Bot"
           
           # Create and checkout config branch if it doesn't exist
+          # First, stash any local changes to avoid conflicts
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "💾 Stashing local changes to avoid conflicts..."
+            git stash push -m "Auto-stash before config branch checkout"
+          fi
+          
+          # Clean up any untracked files that might conflict
+          echo "🧹 Cleaning up potential conflicting files..."
+          rm -f op_updates_*.txt qmodem_updates_*.txt *_last_commit.txt 2>/dev/null || true
+          
           if git rev-parse --verify origin/$CONFIG_BRANCH >/dev/null 2>&1; then
             echo "📂 Config branch exists, checking out..."
             git fetch origin $CONFIG_BRANCH
@@ -344,11 +354,31 @@ jobs:
         run: |
           echo "::group::💾 Configuration File Updates"
           
+          # Clean up any conflicting files first
+          echo "🧹 Cleaning up conflicting files..."
+          rm -f op_updates_*.txt qmodem_updates_*.txt *_last_commit.txt 2>/dev/null || true
+          
+          # Stash any uncommitted changes
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "💾 Stashing uncommitted changes..."
+            git stash push -m "Auto-stash before config branch operations"
+          fi
+          
           # Make sure we're on the config branch
-          git checkout $CONFIG_BRANCH 2>/dev/null || git checkout -b $CONFIG_BRANCH
+          if git rev-parse --verify origin/$CONFIG_BRANCH >/dev/null 2>&1; then
+            git fetch origin $CONFIG_BRANCH
+            git checkout $CONFIG_BRANCH 2>/dev/null || git checkout -b $CONFIG_BRANCH
+          else
+            git checkout --orphan $CONFIG_BRANCH
+            git rm -rf . 2>/dev/null || true
+            echo "# Configuration Storage Branch" > README.md
+            echo "This branch stores configuration files for the workflows." >> README.md
+            git add README.md
+            git commit -m "🎯 Initialize configuration storage branch"
+          fi
           
           # Check if there are any changes to commit
-          git add .
+          git add . 2>/dev/null || true
           
           if git diff --staged --quiet; then
             echo "📝 No configuration changes to commit"

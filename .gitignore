@@ -1,0 +1,23 @@
+# Repository update tracking files
+# These files are created by GitHub Actions workflows to track repository updates
+# They should be stored on the config-data branch, not the main branch
+op_updates_*.txt
+qmodem_updates_*.txt
+*_last_commit.txt
+
+# Temporary build files
+firmware_archives/
+temp_*/
+*.tmp
+*.log
+
+# Workflow artifacts
+release_notes.md
+firmware_new.zip
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
