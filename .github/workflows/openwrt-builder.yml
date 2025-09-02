@@ -409,6 +409,8 @@ jobs:
           echo "⚙️ Installing feeds..."
           ./scripts/feeds install -a
           
+          ./scripts/feeds install -a -f -p qmodem
+          
           echo "📊 Feed statistics:"
           ./scripts/feeds list | wc -l | xargs echo "Total packages:"
           
