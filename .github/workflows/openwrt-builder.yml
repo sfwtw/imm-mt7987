@@ -767,16 +767,37 @@ jobs:
 
       - name: 🎯 Create GitHub Release
         if: env.UPLOAD_RELEASE == 'true' && steps.organize.outputs.status == 'success'
-        uses: softprops/action-gh-release@v1
+        run: |
+          echo "::group::🎯 GitHub Release Creation"
+          
+          # Generate release metadata
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          TAG_NAME="${{ env.RELEASE_TAG }}_${TIMESTAMP}"
+          RELEASE_NAME="🚀 OpenWrt Firmware - $(date +%Y-%m-%d)"
+          
+          echo "📋 Release Information:"
+          echo "  Tag: $TAG_NAME"
+          echo "  Name: $RELEASE_NAME"
+          echo "  Prerelease: ${{ env.BUILD_TYPE == 'debug' }}"
+          
+          # Create release
+          echo "🚀 Creating GitHub release..."
+          if [ "${{ env.BUILD_TYPE }}" = "debug" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          else
+            PRERELEASE_FLAG=""
+          fi
+          
+          gh release create "$TAG_NAME" \
+            --title "$RELEASE_NAME" \
+            --notes-file "${{ steps.release_note.outputs.release_note }}" \
+            $PRERELEASE_FLAG \
+            ${{ env.ARTIFACT_DIR }}/*.zip
+          
+          echo "✅ Release created successfully: $TAG_NAME"
+          echo "::endgroup::"
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN || secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.RELEASE_TAG }}_$(date +%Y%m%d_%H%M%S)
-          name: 🚀 OpenWrt Firmware - $(date +%Y-%m-%d)
-          body_path: ${{ steps.release_note.outputs.release_note }}
-          files: ${{ env.ARTIFACT_DIR }}/*.zip
-          draft: false
-          prerelease: ${{ env.BUILD_TYPE == 'debug' }}
 
       # ============================================================================
       # Configuration Commit Phase
