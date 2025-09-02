@@ -105,6 +105,16 @@ jobs:
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions Bot"
           
+          # Clean up any conflicting files
+          echo "🧹 Cleaning up conflicting files..."
+          rm -f op_updates_*.txt qmodem_updates_*.txt *_last_commit.txt 2>/dev/null || true
+          
+          # Stash any local changes
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "💾 Stashing local changes..."
+            git stash push -m "Auto-stash before config branch operations"
+          fi
+          
           # Check out configuration branch to read existing records
           if git rev-parse --verify origin/$CONFIG_BRANCH >/dev/null 2>&1; then
             echo "📂 Config branch exists, checking out..."
@@ -324,6 +334,9 @@ jobs:
           
           # Update OP repository records
           update_repo_records "$OP_URL" "$OP_BRANCH" "op" "OP (coolsnowwolf/lede)"
+          
+          # Update QModem repository records
+          update_repo_records "$QMODEM_URL" "$QMODEM_BRANCH" "qmodem" "QModem (FUjr/QModem)"
           
           echo "::endgroup::"
 
@@ -810,6 +823,16 @@ jobs:
           # Setup git configuration
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions [Build Bot]"
+          
+          # Clean up conflicting files and stash changes
+          echo "🧹 Cleaning up conflicting files..."
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "💾 Stashing uncommitted changes..."
+            git stash push -m "Auto-stash before config branch operations"
+          fi
+          
+          # Remove any conflicting tracking files from working directory
+          rm -f op_updates_*.txt qmodem_updates_*.txt *_last_commit.txt 2>/dev/null || true
           
           # Check out or create config branch
           if git rev-parse --verify origin/$CONFIG_BRANCH >/dev/null 2>&1; then
