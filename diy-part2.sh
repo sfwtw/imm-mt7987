@@ -39,6 +39,6 @@ if [ -f "$UCI_DEFAULTS_FILE" ]; then
     # 在exit 0上面插入新的内容
     VERSION_DATE="R$(date +%y.%-m.%-d)"
     sed -i '/^exit 0$/i\
-sed -i '"'"'\/OPENWRT_RELEASE\/d'"'"' \/usr\/lib\/os-release\
-echo "OPENWRT_RELEASE='"'"'ImmortalWrt (with 237'"'"'s Full HNAT) \/ '"$VERSION_DATE"''"'"'" >> \/usr\/lib\/os-release' "$UCI_DEFAULTS_FILE"
+sed -i "/OPENWRT_RELEASE/d" /usr/lib/os-release\
+echo "OPENWRT_RELEASE=\"ImmortalWrt (with 237s Full HNAT) / '"$VERSION_DATE"'\"" >> /usr/lib/os-release' "$UCI_DEFAULTS_FILE"
 fi
