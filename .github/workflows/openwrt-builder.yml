@@ -955,12 +955,16 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             
             cd "$ARTIFACT_DIR" 2>/dev/null || cd .
-            for zip_file in *.zip 2>/dev/null; do
-              if [ -f "$zip_file" ]; then
-                file_size=$(ls -lh "$zip_file" | awk '{print $5}')
-                echo "- 📁 \`$zip_file\` ($file_size)" >> $GITHUB_STEP_SUMMARY
-              fi
-            done
+            if ls *.zip >/dev/null 2>&1; then
+              for zip_file in *.zip; do
+                if [ -f "$zip_file" ]; then
+                  file_size=$(ls -lh "$zip_file" | awk '{print $5}')
+                  echo "- 📁 \`$zip_file\` ($file_size)" >> $GITHUB_STEP_SUMMARY
+                fi
+              done
+            else
+              echo "- 📁 暂无固件文件生成" >> $GITHUB_STEP_SUMMARY
+            fi
             
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
