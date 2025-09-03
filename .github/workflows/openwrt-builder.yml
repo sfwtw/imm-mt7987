@@ -658,19 +658,19 @@ jobs:
           RELEASE_NOTE_FILE="release_notes.md"
           
           {
-            echo "# 🚀 OpenWrt Firmware Release"
+            echo "# 🚀 OpenWrt 固件发布"
             echo ""
-            echo "## 📋 Build Information"
+            echo "## 📋 构建信息"
             echo ""
-            echo "| Property | Value |"
-            echo "|----------|-------|"
-            echo "| 🏷️ Build Type | \`$BUILD_TYPE\` |"
-            echo "| 📅 Build Date | $(date '+%Y-%m-%d %H:%M:%S %Z') |"
-            echo "| 🎯 Trigger | ${{ github.event_name }} |"
-            echo "| 🔧 Runner | Ubuntu 22.04 |"
-            echo "| 📦 Workflow | ${{ github.workflow }} |"
+            echo "| 属性 | 值 |"
+            echo "|------|---|"
+            echo "| 🏷️ 构建类型 | \`$BUILD_TYPE\` |"
+            echo "| 📅 构建日期 | $(date '+%Y-%m-%d %H:%M:%S %Z') |"
+            echo "| 🎯 触发方式 | ${{ github.event_name }} |"
+            echo "| 🔧 运行环境 | Ubuntu 22.04 |"
+            echo "| 📦 工作流程 | ${{ github.workflow }} |"
             echo ""
-            echo "## 📁 Firmware Versions"
+            echo "## 📁 固件版本"
             echo ""
             
             # Check available firmware versions
@@ -678,21 +678,21 @@ jobs:
             
             if [ -f "${FIRMWARE_PREFIX}_$VERSION_LATEST.zip" ]; then
               latest_size=$(ls -lh "${FIRMWARE_PREFIX}_$VERSION_LATEST.zip" | awk '{print $5}')
-              echo "- 🆕 **${FIRMWARE_PREFIX}_$VERSION_LATEST.zip** (Latest) - $latest_size"
+              echo "- 🆕 **${FIRMWARE_PREFIX}_$VERSION_LATEST.zip** (最新版) - $latest_size"
             fi
             
             if [ -f "${FIRMWARE_PREFIX}_$VERSION_PREVIOUS.zip" ]; then
               prev_size=$(ls -lh "${FIRMWARE_PREFIX}_$VERSION_PREVIOUS.zip" | awk '{print $5}')
-              echo "- 📦 **${FIRMWARE_PREFIX}_$VERSION_PREVIOUS.zip** (Previous) - $prev_size"
+              echo "- 📦 **${FIRMWARE_PREFIX}_$VERSION_PREVIOUS.zip** (上一版) - $prev_size"
             fi
             
             if [ -f "${FIRMWARE_PREFIX}_$VERSION_OLDEST.zip" ]; then
               old_size=$(ls -lh "${FIRMWARE_PREFIX}_$VERSION_OLDEST.zip" | awk '{print $5}')
-              echo "- 📦 **${FIRMWARE_PREFIX}_$VERSION_OLDEST.zip** (Archive) - $old_size"
+              echo "- 📦 **${FIRMWARE_PREFIX}_$VERSION_OLDEST.zip** (存档版) - $old_size"
             fi
             
             echo ""
-            echo "## 📊 Repository Updates"
+            echo "## 📊 仓库更新"
             echo ""
             
             cd "$GITHUB_WORKSPACE"
@@ -707,7 +707,7 @@ jobs:
               echo ""
               
               if [ -f "${prefix}_updates_001.txt" ]; then
-                echo "#### 📝 Latest Updates (${FIRMWARE_PREFIX}_$VERSION_LATEST)"
+                echo "#### 📝 最新更新 (${FIRMWARE_PREFIX}_$VERSION_LATEST)"
                 echo ""
                 
                 # Skip header lines and process commit records
@@ -715,7 +715,7 @@ jobs:
                   if [[ $line == "编译时间:"* ]] || [[ $line == "编译类型:"* ]] || [[ $line == "仓库类型:"* ]]; then
                     continue
                   elif [[ $line == "更新内容:" ]]; then
-                    echo "**Commit History:**"
+                    echo "**提交历史:**"
                     echo ""
                   else
                     if [[ $line =~ ^[a-f0-9]{40}\|[a-f0-9]{7}\| ]]; then
@@ -728,7 +728,7 @@ jobs:
                 done < "${prefix}_updates_001.txt"
                 echo ""
               else
-                echo "*No update records available*"
+                echo "*无可用的更新记录*"
                 echo ""
               fi
             }
@@ -739,25 +739,25 @@ jobs:
             # Process QModem repository updates
             process_update_records "qmodem" "QModem Repository (FUjr/QModem)" "$QMODEM_URL"
             
-            echo "## 💾 Installation Instructions"
+            echo "## 💾 安装说明"
             echo ""
-            echo "1. **Download** the appropriate firmware file for your device"
-            echo "2. **Backup** your current configuration if needed"
-            echo "3. **Flash** the firmware using your preferred method:"
-            echo "   - Web interface upgrade"
-            echo "   - TFTP recovery"
-            echo "   - Serial console"
-            echo "4. **Configure** your device after first boot"
+            echo "1. **下载** 适合您设备的固件文件"
+            echo "2. **备份** 当前配置（如需要）"
+            echo "3. **刷写** 使用以下方式刷入固件："
+            echo "   - 网页界面升级"
+            echo "   - TFTP 恢复"
+            echo "   - 串口控制台"
+            echo "4. **配置** 首次启动后配置设备"
             echo ""
-            echo "## ⚠️ Important Notes"
+            echo "## ⚠️ 重要提示"
             echo ""
-            echo "- This is a **development build** - use at your own risk"
-            echo "- Always backup your current firmware before upgrading"
-            echo "- Check device compatibility before flashing"
-            echo "- Factory reset may be required when upgrading between major versions"
+            echo "- 这是一个 **开发版本** - 使用风险自负"
+            echo "- 升级前务必备份当前固件"
+            echo "- 刷机前请检查设备兼容性"
+            echo "- 在主要版本之间升级时可能需要恢复出厂设置"
             echo ""
             echo "---"
-            echo "*Automatically generated by GitHub Actions on $(date '+%Y-%m-%d %H:%M:%S %Z')*"
+            echo "*由 GitHub Actions 自动生成于 $(date '+%Y-%m-%d %H:%M:%S %Z')*"
             
           } > "$RELEASE_NOTE_FILE"
           
@@ -913,45 +913,45 @@ jobs:
           
           echo "::endgroup::"
 
-      - name: 📋 Generate Build Summary
+      - name: 📋 生成构建摘要
         if: always()
         run: |
-          echo "# 🏗️ OpenWrt Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "# 🏗️ OpenWrt 构建摘要" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Build Status
-          echo "## 📊 Build Status" >> $GITHUB_STEP_SUMMARY
+          # 构建状态
+          echo "## 📊 构建状态" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ steps.build_status.outputs.status }}" = "success" ]; then
-            echo "### ✅ Build Successful" >> $GITHUB_STEP_SUMMARY
+            echo "### ✅ 构建成功" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "The firmware has been compiled successfully and is ready for use." >> $GITHUB_STEP_SUMMARY
+            echo "固件已成功编译完成，可以正常使用。" >> $GITHUB_STEP_SUMMARY
           else
-            echo "### ❌ Build Failed" >> $GITHUB_STEP_SUMMARY
+            echo "### ❌ 构建失败" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "The build process encountered errors. Please check the logs for details." >> $GITHUB_STEP_SUMMARY
+            echo "构建过程中遇到错误，请检查日志了解详情。" >> $GITHUB_STEP_SUMMARY
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Build Information
-          echo "## 📋 Build Details" >> $GITHUB_STEP_SUMMARY
+          # 构建信息
+          echo "## 📋 构建详情" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🏷️ Build Type | $BUILD_TYPE |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📅 Build Date | $(date '+%Y-%m-%d %H:%M:%S %Z') |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🎯 Trigger | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔧 Repository | ${{ github.repository }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📦 Workflow | ${{ github.workflow }} #${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 属性 | 值 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏷️ 构建类型 | $BUILD_TYPE |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📅 构建日期 | $(date '+%Y-%m-%d %H:%M:%S %Z') |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎯 触发方式 | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔧 代码仓库 | ${{ github.repository }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📦 工作流程 | ${{ github.workflow }} #${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Files Generated
+          # 生成的文件
           if [ "${{ steps.organize.outputs.status }}" = "success" ]; then
-            echo "## 📦 Generated Files" >> $GITHUB_STEP_SUMMARY
+            echo "## 📦 生成的文件" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "The following firmware files have been generated:" >> $GITHUB_STEP_SUMMARY
+            echo "已生成以下固件文件：" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             
             cd "$ARTIFACT_DIR" 2>/dev/null || cd .
@@ -965,22 +965,22 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
           
-          # Next Steps
-          echo "## 🚀 Next Steps" >> $GITHUB_STEP_SUMMARY
+          # 下一步操作
+          echo "## 🚀 下一步操作" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ "$UPLOAD_RELEASE" = "true" ] && [ "${{ steps.organize.outputs.status }}" = "success" ]; then
-            echo "1. 📥 **Download** firmware from the release page" >> $GITHUB_STEP_SUMMARY
-            echo "2. 🔍 **Verify** the firmware integrity" >> $GITHUB_STEP_SUMMARY
-            echo "3. 📱 **Flash** to your device following proper procedures" >> $GITHUB_STEP_SUMMARY
+            echo "1. 📥 **下载** 从发布页面下载固件" >> $GITHUB_STEP_SUMMARY
+            echo "2. 🔍 **验证** 固件完整性" >> $GITHUB_STEP_SUMMARY
+            echo "3. 📱 **刷写** 按照正确步骤刷入设备" >> $GITHUB_STEP_SUMMARY
           elif [ "$UPLOAD_FIRMWARE" = "true" ] && [ "${{ steps.organize.outputs.status }}" = "success" ]; then
-            echo "1. 📥 **Download** firmware from the artifacts section" >> $GITHUB_STEP_SUMMARY
-            echo "2. 🔍 **Verify** the firmware integrity" >> $GITHUB_STEP_SUMMARY
-            echo "3. 📱 **Flash** to your device following proper procedures" >> $GITHUB_STEP_SUMMARY
+            echo "1. 📥 **下载** 从工件区域下载固件" >> $GITHUB_STEP_SUMMARY
+            echo "2. 🔍 **验证** 固件完整性" >> $GITHUB_STEP_SUMMARY
+            echo "3. 📱 **刷写** 按照正确步骤刷入设备" >> $GITHUB_STEP_SUMMARY
           else
-            echo "- Build completed without uploads enabled" >> $GITHUB_STEP_SUMMARY
+            echo "- 构建完成，但未启用上传功能" >> $GITHUB_STEP_SUMMARY
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "*Build completed at $(date '+%Y-%m-%d %H:%M:%S %Z')*" >> $GITHUB_STEP_SUMMARY
+          echo "*构建完成时间：$(date '+%Y-%m-%d %H:%M:%S %Z')*" >> $GITHUB_STEP_SUMMARY

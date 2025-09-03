@@ -421,69 +421,69 @@ jobs:
       # ============================================================================
       # Summary Generation Phase
       # ============================================================================
-      - name: 📊 Generate Workflow Summary
+      - name: 📊 生成工作流程摘要
         if: always()
         run: |
-          echo "# 🔍 Repository Update Checker Summary" >> $GITHUB_STEP_SUMMARY
+          echo "# 🔍 仓库更新检查摘要" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Status Overview
-          echo "## 📋 Check Overview" >> $GITHUB_STEP_SUMMARY
+          # 状态概览
+          echo "## 📋 检查概览" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🕐 Check Time | $(date '+%Y-%m-%d %H:%M:%S %Z') |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🎯 Target | ${{ github.event.inputs.check_repo || 'all' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🚀 Force Build | ${{ github.event.inputs.force_build || 'false' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🏃 Trigger | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 属性 | 值 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🕐 检查时间 | $(date '+%Y-%m-%d %H:%M:%S %Z') |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎯 检查目标 | ${{ github.event.inputs.check_repo || 'all' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚀 强制构建 | ${{ github.event.inputs.force_build || 'false' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏃 触发方式 | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Repository Status
-          echo "## 📦 Repository Status" >> $GITHUB_STEP_SUMMARY
+          # 仓库状态
+          echo "## 📦 仓库状态" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Repository | Status | Updates | Config File |" >> $GITHUB_STEP_SUMMARY
-          echo "|------------|--------|---------|-------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 仓库 | 状态 | 更新 | 配置文件 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|------|----------|" >> $GITHUB_STEP_SUMMARY
           
-          # OP Repository Status
+          # OP 仓库状态
           if [ -f "$OP_LAST_COMMIT_FILE" ]; then
-            op_status="✅ Tracked"
-            op_config="📄 Present"
+            op_status="✅ 已跟踪"
+            op_config="📄 存在"
           else
-            op_status="⚠️ Not Tracked"
-            op_config="❌ Missing"
+            op_status="⚠️ 未跟踪"
+            op_config="❌ 缺失"
           fi
           echo "| 🔧 OP ($OP_DISPLAY_NAME) | $op_status | ${{ steps.check_updates.outputs.op_updated || 'N/A' }} | $op_config |" >> $GITHUB_STEP_SUMMARY
           
-          # QModem Repository Status  
+          # QModem 仓库状态  
           if [ -f "$QMODEM_LAST_COMMIT_FILE" ]; then
-            qmodem_status="✅ Tracked"
-            qmodem_config="📄 Present"
+            qmodem_status="✅ 已跟踪"
+            qmodem_config="📄 存在"
           else
-            qmodem_status="⚠️ Not Tracked"
-            qmodem_config="❌ Missing"
+            qmodem_status="⚠️ 未跟踪"
+            qmodem_config="❌ 缺失"
           fi
           echo "| 📱 QModem ($QMODEM_DISPLAY_NAME) | $qmodem_status | ${{ steps.check_updates.outputs.qmodem_updated || 'N/A' }} | $qmodem_config |" >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Results
-          echo "## 🎯 Results" >> $GITHUB_STEP_SUMMARY
+          # 结果
+          echo "## 🎯 结果" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ steps.check_updates.outputs.has_updates }}" = "true" ]; then
-            echo "### ✅ Build Triggered" >> $GITHUB_STEP_SUMMARY
+            echo "### ✅ 已触发构建" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "The build workflow has been triggered due to detected updates or manual request." >> $GITHUB_STEP_SUMMARY
+            echo "由于检测到更新或手动请求，已触发构建工作流程。" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Update Details:**" >> $GITHUB_STEP_SUMMARY
-            echo "- OP Repository: ${{ steps.check_updates.outputs.op_updated || 'No change' }}" >> $GITHUB_STEP_SUMMARY  
-            echo "- QModem Repository: ${{ steps.check_updates.outputs.qmodem_updated || 'No change' }}" >> $GITHUB_STEP_SUMMARY
+            echo "**更新详情:**" >> $GITHUB_STEP_SUMMARY
+            echo "- OP 仓库: ${{ steps.check_updates.outputs.op_updated || '无变化' }}" >> $GITHUB_STEP_SUMMARY  
+            echo "- QModem 仓库: ${{ steps.check_updates.outputs.qmodem_updated || '无变化' }}" >> $GITHUB_STEP_SUMMARY
           else
-            echo "### ℹ️ No Build Required" >> $GITHUB_STEP_SUMMARY
+            echo "### ℹ️ 无需构建" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "No repository updates detected and no manual build requested." >> $GITHUB_STEP_SUMMARY
+            echo "未检测到仓库更新且未请求手动构建。" >> $GITHUB_STEP_SUMMARY
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "*Automated check completed at $(date '+%Y-%m-%d %H:%M:%S %Z')*" >> $GITHUB_STEP_SUMMARY
+          echo "*自动检查完成于 $(date '+%Y-%m-%d %H:%M:%S %Z')*" >> $GITHUB_STEP_SUMMARY
