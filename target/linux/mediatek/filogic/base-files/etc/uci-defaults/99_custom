@@ -19,17 +19,16 @@ if [ -f '/etc/apk/repositories.d/distfeeds.list' ]; then
 fi
 
 uci batch <<-EOF
-	set luci.themes.Alpha=/luci-static/alpha
 	set luci.main.mediaurlbase=/luci-static/alpha
 	commit luci
 EOF
 
 sed -i '/\/bin\/login -f root/!s|/bin/login|/bin/login -f root|' /etc/config/ttyd && /etc/init.d/ttyd reload
 
-# sed -i '/OPENWRT_RELEASE/d' /usr/lib/os-release
-# echo "OPENWRT_RELEASE='ImmortalWrt-IPQ (with QSDK 11.4) / R25.8.11'" >> /usr/lib/os-release
 
 rm -rf /tmp/luci-modulecache/
 rm -f /tmp/luci-indexcache
 
+sed -i '/OPENWRT_RELEASE/d' /usr/lib/os-release
+echo "OPENWRT_RELEASE='ImmortalWrt (with 237 Full HNAT) / R25.9.3'" >> /usr/lib/os-release
 exit 0
