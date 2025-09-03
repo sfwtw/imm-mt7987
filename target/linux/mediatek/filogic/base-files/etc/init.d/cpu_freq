@@ -1,0 +1,8 @@
+#!/bin/sh /etc/rc.common
+# SPDX-License-Identifier: GPL-2.0-only
+
+START=99
+
+boot() {
+	echo "$(mhz -c)MHz" > /tmp/mtk_cpu_freq
+}
