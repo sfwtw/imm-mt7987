@@ -95,12 +95,18 @@ platform_do_upgrade() {
 	bananapi,bpi-r3-mini|\
 	bananapi,bpi-r4|\
 	bananapi,bpi-r4-poe|\
+	cetron,ct3003-ubootmod|\
 	cmcc,a10-ubootmod|\
 	cmcc,rax3000m|\
+	cmcc,rax3000me|\
+	cudy,tr3000-v1-ubootmod|\
 	gatonetworks,gdsp|\
 	h3c,magic-nx30-pro|\
+	imou,lc-hx3001|\
 	jcg,q30-pro|\
 	jdcloud,re-cp-03|\
+	konka,komi-a31|\
+	livinet,zr-3020-ubootmod|\
 	mediatek,mt7981-rfb|\
 	mediatek,mt7988a-rfb|\
 	mercusys,mr90x-v1-ubi|\
@@ -108,6 +114,7 @@ platform_do_upgrade() {
 	nokia,ea0326gmp|\
 	openwrt,one|\
 	netcore,n60|\
+	netcore,n60-pro|\
 	qihoo,360t7|\
 	routerich,ax3000-ubootmod|\
 	tplink,tl-7dr7230-v1|\
@@ -152,6 +159,10 @@ platform_do_upgrade() {
 		CI_KERNPART="linux"
 		nand_do_upgrade "$1"
 		;;
+	cudy,wr3000h-v1)
+		CI_UBIPART="ubi"
+		nand_do_upgrade "$1"
+		;;
 	cudy,re3000-v1|\
 	cudy,wr3000-v1|\
 	yuncore,ax835|\
@@ -165,6 +176,7 @@ platform_do_upgrade() {
 		;;
 	mercusys,mr80x-v3|\
 	mercusys,mr90x-v1|\
+	tplink,archer-ax80-v1|\
 	tplink,re6000xd)
 		CI_UBIPART="ubi0"
 		nand_do_upgrade "$1"
@@ -248,7 +260,8 @@ platform_copy_config() {
 	bananapi,bpi-r3-mini|\
 	bananapi,bpi-r4|\
 	bananapi,bpi-r4-poe|\
-	cmcc,rax3000m)
+	cmcc,rax3000m|\
+	cmcc,rax3000me)
 		if [ "$CI_METHOD" = "emmc" ]; then
 			emmc_copy_config
 		fi

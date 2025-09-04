@@ -4,69 +4,88 @@
 /plugin/;
 
 / {
-	compatible = "cmcc,rax3000m", "cmcc,rax3000me", "mediatek,mt7981";
+	compatible = "konka,komi-a31", "mediatek,mt7981";
 
 	fragment@0 {
 		target = <&chosen>;
 		__overlay__ {
-			rootdisk = <&ubi_rootdisk>;
+			rootdisk = <&nor_rootdisk>;
 		};
 	};
 
 	fragment@1 {
-		target = <&gmac0>;
+		target = <&band0>;
 		__overlay__ {
-			nvmem-cells = <&macaddr_factory_2a 0>;
-			nvmem-cell-names = "mac-address";
+			nvmem-cells = <&macaddr_factory_2a 1>;
 		};
 	};
 
 	fragment@2 {
-		target = <&gmac1>;
+		target = <&band1>;
 		__overlay__ {
-			nvmem-cells = <&macaddr_factory_24 0>;
-			nvmem-cell-names = "mac-address";
+			nvmem-cells = <&macaddr_factory_2a 2>;
 		};
 	};
 
 	fragment@3 {
+		target = <&gmac0>;
+		__overlay__ {
+			nvmem-cells = <&macaddr_factory_2a 0>;
+		};
+	};
+
+	fragment@4 {
+		target = <&gmac1>;
+		__overlay__ {
+			nvmem-cells = <&macaddr_factory_24 0>;
+		};
+	};
+
+	fragment@5 {
 		target = <&pio>;
 		__overlay__ {
-			spi0_flash_pins: spi0-pins {
+			spi2_flash_pins: spi2-pins {
 				mux {
 					function = "spi";
-					groups = "spi0", "spi0_wp_hold";
+					groups = "spi2", "spi2_wp_hold";
 				};
 
 				conf-pu {
-					pins = "SPI0_CS", "SPI0_HOLD", "SPI0_WP";
+					pins = "SPI2_CS", "SPI2_HOLD", "SPI2_WP";
 					drive-strength = <8>;
-					mediatek,pull-up-adv = <0>; /* bias-disable */
+					bias-pull-up = <103>;
 				};
 
 				conf-pd {
-					pins = "SPI0_CLK", "SPI0_MOSI", "SPI0_MISO";
+					pins = "SPI2_CLK", "SPI2_MOSI", "SPI2_MISO";
 					drive-strength = <8>;
-					mediatek,pull-up-adv = <0>; /* bias-disable */
+					bias-pull-down = <103>;
 				};
 			};
 		};
 	};
 
-	fragment@4 {
+	fragment@6 {
 		target = <&spi0>;
 		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@7 {
+		target = <&spi2>;
+		__overlay__ {
 			pinctrl-names = "default";
-			pinctrl-0 = <&spi0_flash_pins>;
+			pinctrl-0 = <&spi2_flash_pins>;
 			status = "okay";
 
-			spi_nand@0 {
-				compatible = "spi-nand";
+			flash@0 {
+				compatible = "jedec,spi-nor";
 				#address-cells = <1>;
 				#size-cells = <1>;
 				reg = <0>;
 
-				spi-max-frequency = <52000000>;
+				spi-max-frequency = <50000000>;
 				spi-tx-bus-width = <4>;
 				spi-rx-bus-width = <4>;
 
@@ -77,18 +96,18 @@
 
 					partition@0 {
 						label = "bl2";
-						reg = <0x00000 0x0100000>;
+						reg = <0x0 0x40000>;
 						read-only;
 					};
 
-					partition@100000 {
+					partition@40000 {
 						label = "u-boot-env";
-						reg = <0x100000 0x80000>;
+						reg = <0x40000 0x40000>;
 					};
 
-					partition@180000 {
+					partition@80000 {
 						label = "factory";
-						reg = <0x180000 0x200000>;
+						reg = <0x80000 0x20000>;
 						read-only;
 
 						nvmem-layout {
@@ -98,12 +117,6 @@
 
 							eeprom_factory_0: eeprom@0 {
 								reg = <0x0 0x1000>;
-							};
-
-							macaddr_factory_a: macaddr@a {
-								compatible = "mac-base";
-								reg = <0xa 0x6>;
-								#nvmem-cell-cells = <1>;
 							};
 
 							macaddr_factory_24: macaddr@24 {
@@ -120,39 +133,26 @@
 						};
 					};
 
-					partition@380000 {
+					partition@100000 {
 						label = "fip";
-						reg = <0x380000 0x200000>;
+						reg = <0x100000 0x80000>;
 						read-only;
 					};
 
-					partition@580000 {
-						compatible = "linux,ubi";
-						label = "ubi";
-						reg = <0x580000 0x7200000>;
-
-						volumes {
-							ubi_rootdisk: ubi-volume-fit {
-								volname = "fit";
-							};
-						};
+					nor_rootdisk: partition@180000 {
+						compatible = "denx,fit";
+						label = "fit";
+						reg = <0x180000 0xe80000>;
 					};
 				};
 			};
 		};
 	};
 
-	fragment@5 {
+	fragment@8 {
 		target = <&wifi>;
 		__overlay__ {
 			nvmem-cells = <&eeprom_factory_0>;
-			nvmem-cell-names = "eeprom";
-
-			band@1 {
-				reg = <1>;
-				nvmem-cells = <&macaddr_factory_a 0>;
-				nvmem-cell-names = "mac-address";
-			};
 		};
 	};
 };

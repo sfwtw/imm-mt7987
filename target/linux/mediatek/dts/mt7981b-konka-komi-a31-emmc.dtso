@@ -4,7 +4,7 @@
 /plugin/;
 
 / {
-	compatible = "cmcc,rax3000m", "cmcc,rax3000me", "mediatek,mt7981";
+	compatible = "konka,komi-a31", "mediatek,mt7981";
 
 	fragment@0 {
 		target = <&chosen>;
@@ -14,22 +14,34 @@
 	};
 
 	fragment@1 {
-		target = <&gmac0>;
+		target = <&band0>;
 		__overlay__ {
-			nvmem-cells = <&macaddr_factory_2a 0>;
-			nvmem-cell-names = "mac-address";
+			nvmem-cells = <&macaddr_factory_2a 1>;
 		};
 	};
 
 	fragment@2 {
-		target = <&gmac1>;
+		target = <&band1>;
 		__overlay__ {
-			nvmem-cells = <&macaddr_factory_24 0>;
-			nvmem-cell-names = "mac-address";
+			nvmem-cells = <&macaddr_factory_2a 2>;
 		};
 	};
 
 	fragment@3 {
+		target = <&gmac0>;
+		__overlay__ {
+			nvmem-cells = <&macaddr_factory_2a 0>;
+		};
+	};
+
+	fragment@4 {
+		target = <&gmac1>;
+		__overlay__ {
+			nvmem-cells = <&macaddr_factory_24 0>;
+		};
+	};
+
+	fragment@5 {
 		target = <&mmc0>;
 		__overlay__ {
 			bus-width = <8>;
@@ -63,12 +75,6 @@
 									reg = <0x0 0x1000>;
 								};
 
-								macaddr_factory_a: macaddr@a {
-									compatible = "mac-base";
-									reg = <0xa 0x6>;
-									#nvmem-cell-cells = <1>;
-								};
-
 								macaddr_factory_24: macaddr@24 {
 									compatible = "mac-base";
 									reg = <0x24 0x6>;
@@ -92,7 +98,7 @@
 		};
 	};
 
-	fragment@4 {
+	fragment@6 {
 		target = <&pio>;
 		__overlay__ {
 			mmc0_pins_default: mmc0-pins {
@@ -111,17 +117,17 @@
 		};
 	};
 
-	fragment@5 {
+	fragment@7 {
+		target = <&spi0>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@8 {
 		target = <&wifi>;
 		__overlay__ {
 			nvmem-cells = <&eeprom_factory_0>;
-			nvmem-cell-names = "eeprom";
-
-			band@1 {
-				reg = <1>;
-				nvmem-cells = <&macaddr_factory_a 0>;
-				nvmem-cell-names = "mac-address";
-			};
 		};
 	};
 };
