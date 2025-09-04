@@ -31,6 +31,18 @@
 		/delete-node/ cpu@3;
 	};
 
+	thermal-zones {
+        cpu-thermal {
+            cooling-maps {
+                cpu-active-hot {
+                    cooling-device = <&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
+                            <&cpu1 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
+                            <&cpu2 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
+                };
+            };
+        };
+    };
+
 	memory@40000000 {
 		reg = <0 0x40000000 0 0x20000000>;
 	};
