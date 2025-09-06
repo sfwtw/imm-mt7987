@@ -37,7 +37,9 @@ return view.extend({
 		o = s.option(form.Value, 'fan_file', _('Fan File'), _('Fan Speed File'));
 		// o.placeholder = '/sys/devices/virtual/thermal/cooling_device0/cur_state';
 		var speed = parseInt(await fs.read(uci.get('fancontrol', 'settings', 'fan_file')));
-		o.description = _('Current speed:') + ' <b>' + (speed) + '</b>';
+		var max_speed = parseInt(uci.get('fancontrol', 'settings', 'max_speed')) || 255;
+		var percentage = speed > 0 && max_speed > 0 ? Math.round((speed / max_speed) * 100) : 0;
+		o.description = _('Current speed:') + ' <b>' + speed + '</b> (' + percentage + '%)';
 
 		o = s.option(form.Value, 'start_speed', _('Initial Speed'), _('Please enter the initial speed for fan startup.'));
 		o.placeholder = '35';

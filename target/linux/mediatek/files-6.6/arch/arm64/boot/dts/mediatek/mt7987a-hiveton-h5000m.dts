@@ -48,7 +48,7 @@
 
 		led {
 			pwms = <&pwm 0 50000 0>;
-			max-brightness = <255>;
+			max-brightness = <100>;
 			active-low;
 			linux,default-trigger = "default-on";
 		};
@@ -83,12 +83,88 @@
 	};
 };
 
+&cluster0_opp {
+	compatible = "operating-points-v2";
+	opp-shared;
+	opp00 {
+		opp-hz = /bits/ 64 <2400000000>;
+		opp-microvolt = <850000>;
+	};
+	opp01 {
+		opp-hz = /bits/ 64 <2400000000>;
+		opp-microvolt = <850000>;
+	};
+	opp02 {
+		opp-hz = /bits/ 64 <2400000000>;
+		opp-microvolt = <850000>;
+	};
+	opp03 {
+		opp-hz = /bits/ 64 <2400000000>;
+		opp-microvolt = <850000>;
+	};
+};
+
 &fan {
 	pinctrl-names = "default";
-        pinctrl-0 = <&pwm_fan_pins>;
+	pinctrl-0 = <&pwm_fan_pins>;
 	compatible = "pwm-fan";
 	#cooling-cells = <2>;
 	cooling-levels = <0 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 210 220 240 255>;
 	pwms = <&pwm 1 50000 0>;
 	status = "okay";
+};
+
+&cpu_thermal {
+	polling-delay-passive = <1000>;
+	polling-delay = <1000>;
+	thermal-sensors = <&lvts 0>;
+
+	trips {
+		cpu_trip_crit: crit {
+			temperature = <125000>;
+			hysteresis = <2000>;
+			type = "critical";
+		};
+
+		cpu_trip_hot: hot {
+			temperature = <120000>;
+			hysteresis = <2000>;
+			type = "hot";
+		};
+
+		cpu_trip_active_hot: active-hot {
+			temperature = <117000>;
+			hysteresis = <2000>;
+			type = "active";
+		};
+
+		cpu_trip_active_high: active-high {
+			temperature = <115000>;
+			hysteresis = <2000>;
+			type = "active";
+		};
+
+		cpu_trip_active_med: active-med {
+			temperature = <85000>;
+			hysteresis = <2000>;
+			type = "active";
+		};
+
+		cpu_trip_active_low: active-low {
+			temperature = <40000>;
+			hysteresis = <2000>;
+			type = "active";
+		};
+	};
+
+	cooling-maps {
+		map0 {
+		/* active: dynamic cpu frequency scaling */
+			cooling-device = <&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
+					 <&cpu1 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
+					 <&cpu2 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
+					 <&cpu3 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
+			trip = <&cpu_trip_active_hot>;
+		};
+	};
 };

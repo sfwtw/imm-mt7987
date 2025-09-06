@@ -30,5 +30,17 @@ if grep -q "ipq40xx" "/etc/openwrt_release"; then
 	echo -n "WiFi:${mt76_temp} ${wifi_temp}"
 else
 	cpu_temp="$(awk '{printf("%.1f°C", $0 / 1000)}' "$THERMAL_PATH/thermal_zone0/temp")"
-	echo -n "CPU: ${cpu_temp}, WiFi: ${wifi_temp}"
+
+	if [ -f "/etc/config/fancontrol" ]; then
+		fan_file=$(grep "option fan_file" /etc/config/fancontrol | cut -d "'" -f 2)
+		max_speed=$(grep "option max_speed" /etc/config/fancontrol | cut -d "'" -f 2)
+	fi
+	if [ -n "$fan_file" ] && [ -n "$max_speed" ] && [ -f "$fan_file" ]; then
+		current_speed=$(cat "$fan_file")
+		fan_percent=$(awk "BEGIN {printf \"%d%%\", ($current_speed * 100 / $max_speed)}")
+		fan_speed="Fan: $fan_percent (value: $current_speed)"
+	else
+		fan_speed=""
+	fi
+	echo -n "CPU: ${cpu_temp}, WiFi: ${wifi_temp} | ${fan_speed}"
 fi
