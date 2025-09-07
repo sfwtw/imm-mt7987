@@ -50,7 +50,7 @@ diff --git a/drivers/net/ethernet/mediatek/mtk_ppe_offload.c b/drivers/net/ether
 index f4657dd..8304f92 100644
 --- a/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
-@@ -91,29 +91,31 @@ mtk_flow_offload_mangle_eth(const struct flow_action_entry *act, void *eth)
+@@ -93,31 +93,29 @@ mtk_flow_offload_mangle_eth(const struct
  static int
  mtk_flow_get_wdma_info(struct net_device *dev, const u8 *addr, struct mtk_wdma_info *info)
  {
@@ -68,19 +68,22 @@ index f4657dd..8304f92 100644
  	if (!IS_ENABLED(CONFIG_NET_MEDIATEK_SOC_WED))
  		return -1;
  
+-	rcu_read_lock();
 -	err = dev_fill_forward_path(dev, addr, &stack);
+-	rcu_read_unlock();
 -	if (err)
 -		return err;
 +	if (!dev->netdev_ops->ndo_fill_forward_path)
 +		return -1;
++
++	memcpy(ctx.daddr, addr, sizeof(ctx.daddr));
++	path.mtk_wdma.tid = info->tid;
++	if (dev->netdev_ops->ndo_fill_forward_path(&ctx, &path))
++		return -1;
  
 -	path = &stack.path[stack.num_paths - 1];
 -	if (path->type != DEV_PATH_MTK_WDMA)
-+	memcpy(ctx.daddr, addr, sizeof(ctx.daddr));
-+
-+	path.mtk_wdma.tid = info->tid;
-+
-+	if (dev->netdev_ops->ndo_fill_forward_path(&ctx, &path))
++	if (path.type != DEV_PATH_MTK_WDMA)
  		return -1;
  
 -	info->wdma_idx = path->mtk_wdma.wdma_idx;
@@ -88,9 +91,6 @@ index f4657dd..8304f92 100644
 -	info->bss = path->mtk_wdma.bss;
 -	info->wcid = path->mtk_wdma.wcid;
 -	info->amsdu = path->mtk_wdma.amsdu;
-+	if (path.type != DEV_PATH_MTK_WDMA)
-+		return -1;
-+
 +	memcpy(info, &path.mtk_wdma, sizeof(*info));
  
  	return 0;
