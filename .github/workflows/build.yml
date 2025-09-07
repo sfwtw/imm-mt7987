@@ -123,12 +123,10 @@ jobs:
             
             # Copy config files to main branch working directory for use during build
             git checkout ${{ github.ref_name }}
-            git show $CONFIG_BRANCH:$OP_UPDATES_001 > $OP_UPDATES_001 2>/dev/null || true
-            git show $CONFIG_BRANCH:$OP_UPDATES_002 > $OP_UPDATES_002 2>/dev/null || true
-            git show $CONFIG_BRANCH:$OP_UPDATES_003 > $OP_UPDATES_003 2>/dev/null || true
-            git show $CONFIG_BRANCH:$QMODEM_UPDATES_001 > $QMODEM_UPDATES_001 2>/dev/null || true
-            git show $CONFIG_BRANCH:$QMODEM_UPDATES_002 > $QMODEM_UPDATES_002 2>/dev/null || true
-            git show $CONFIG_BRANCH:$QMODEM_UPDATES_003 > $QMODEM_UPDATES_003 2>/dev/null || true
+            git show $CONFIG_BRANCH:op_updates_latest.txt > op_updates_latest.txt 2>/dev/null || true
+            git show $CONFIG_BRANCH:qmodem_updates_latest.txt > qmodem_updates_latest.txt 2>/dev/null || true
+            git show $CONFIG_BRANCH:op_last_commit.txt > op_last_commit.txt 2>/dev/null || true
+            git show $CONFIG_BRANCH:qmodem_last_commit.txt > qmodem_last_commit.txt 2>/dev/null || true
           else
             echo "⚠️ Config branch does not exist, will be created later"
           fi
@@ -280,7 +278,7 @@ jobs:
           echo "🕐 Build Time: $current_time"
           echo "🏷️ Build Type: $build_type"
           
-          # 更新仓库记录函数（只检测是否有提交，有则更新，只保留最新）
+          # 更新仓库记录函数（只保留最新记录）
           update_repo_records() {
             local repo_url="$1"
             local repo_branch="$2"
@@ -307,7 +305,7 @@ jobs:
                 last_commit=$(cat "$last_commit_file")
               fi
               
-              # 如果有新提交则更新
+              # 如果有新提交则更新（只保留最新记录）
               if [ "$current_commit" != "$last_commit" ]; then
                 echo "✅ 检测到新提交，更新记录"
                 echo "$current_commit" > "$last_commit_file"
@@ -323,7 +321,7 @@ jobs:
                   echo "作者: $current_author"
                   echo "日期: $current_date"
                   echo "说明: $current_message"
-                } > "${prefix}_updates_001.txt"
+                } > "${prefix}_updates_latest.txt"
               else
                 echo "ℹ️ 无新提交，无需更新"
               fi
@@ -332,9 +330,9 @@ jobs:
             fi
           }
           
-          # 仅检测并更新 OP 仓库
+          # 仅检测并更新 OP 仓库（只保留最新）
           update_repo_records "$OP_URL" "$OP_BRANCH" "op" "OP (coolsnowwolf/lede)"
-          # 仅检测并更新 QModem 仓库
+          # 仅检测并更新 QModem 仓库（只保留最新）
           update_repo_records "$QMODEM_URL" "$QMODEM_BRANCH" "qmodem" "QModem (FUjr/QModem)"
           
           echo "::endgroup::"
@@ -633,7 +631,7 @@ jobs:
             echo ""
             cd "$GITHUB_WORKSPACE"
             for prefix in op qmodem; do
-              if [ -f "${prefix}_updates_001.txt" ]; then
+              if [ -f "${prefix}_updates_latest.txt" ]; then
                 while IFS= read -r line; do
                   if [[ $line == "提交哈希:"* ]]; then
                     full_hash=$(echo "$line" | cut -d' ' -f2)
@@ -646,7 +644,7 @@ jobs:
                   elif [[ $line == "说明:"* ]]; then
                     subject=$(echo "$line" | cut -d' ' -f2-)
                   fi
-                done < "${prefix}_updates_001.txt"
+                done < "${prefix}_updates_latest.txt"
                 if [ -n "$short_hash" ] && [ -n "$subject" ]; then
                   repo_url_var="${prefix^^}_URL"
                   repo_url="${!repo_url_var}"
@@ -761,14 +759,14 @@ jobs:
           
           # Copy updated config files to config branch
           git checkout ${{ github.ref_name }}
-          for file in op_updates_*.txt qmodem_updates_*.txt; do
+          for file in op_updates_latest.txt qmodem_updates_latest.txt op_last_commit.txt qmodem_last_commit.txt; do
             if [ -f "$file" ]; then
               cp "$file" /tmp/"$file"
             fi
           done
           
           git checkout $CONFIG_BRANCH
-          for file in op_updates_*.txt qmodem_updates_*.txt; do
+          for file in op_updates_latest.txt qmodem_updates_latest.txt op_last_commit.txt qmodem_last_commit.txt; do
             if [ -f "/tmp/$file" ]; then
               cp "/tmp/$file" "$file"
             fi
