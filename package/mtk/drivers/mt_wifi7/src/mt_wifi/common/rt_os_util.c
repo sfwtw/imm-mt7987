@@ -328,3 +328,14 @@ end:
 }
 #endif
 
+/*
+ * Handle bad unaligned access length - this should never be called
+ * but is required by the unaligned access macros in none_type.h
+ */
+void bad_unaligned_access_length(void)
+{
+	MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+		("FATAL: bad unaligned access length detected\n"));
+	BUG();
+}
+

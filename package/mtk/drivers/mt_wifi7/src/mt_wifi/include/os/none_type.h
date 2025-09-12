@@ -236,7 +236,10 @@ INLINE UINT32 __uldl(UINT32 *addr);
 
 #define __get_unaligned(ptr, size) ({		\
 		const void *__gu_p = ptr;		\
-		__typeof__(*(ptr)) val;			\
+		__typeof__(*(ptr)) val = 0;		\
+		if (!__gu_p) {				\
+			bad_unaligned_access_length();	\
+		}					\
 		switch (size) {				\
 		case 1:					\
 			val = *(uint8_t *)__gu_p;	\
@@ -259,6 +262,10 @@ INLINE UINT32 __uldl(UINT32 *addr);
 #define __put_unaligned(val, ptr, size)		\
 	do {						\
 		void *__gu_p = ptr;			\
+		if (!__gu_p) {				\
+			bad_unaligned_access_length();	\
+			break;				\
+		}					\
 		switch (size) {				\
 		case 1:					\
 			*(uint8_t *)__gu_p = val;		\

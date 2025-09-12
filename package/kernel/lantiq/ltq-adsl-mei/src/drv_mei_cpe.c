@@ -1509,7 +1509,7 @@ IFX_MEI_DFEMemoryAlloc (DSL_DEV_Device_t * pDev, long size)
 				err = -ENOMEM;
 				goto allocate_error;
 			}
-			mem_ptr = (unsigned long) (org_mem_ptr + 1023) & ~(1024 -1);
+			mem_ptr = (unsigned long) ((char *)org_mem_ptr + 1023) & ~(1024 - 1);
 		} else {
 			mem_ptr = (unsigned long) org_mem_ptr;
 		}
@@ -1650,7 +1650,7 @@ DSL_BSP_FWDownload (DSL_DEV_Device_t * pDev, const char *buf,
 				goto error;
 			}
 			adsl_mem_info[XDATA_REGISTER].address =
-				(char *) ((unsigned long) (org_mem_ptr + 1023) & ~(1024 -1));
+				(char *) ((unsigned long) ((char *)org_mem_ptr + 1023) & ~(1024 - 1));
 		} else {
 			adsl_mem_info[XDATA_REGISTER].address = org_mem_ptr;
 		}
