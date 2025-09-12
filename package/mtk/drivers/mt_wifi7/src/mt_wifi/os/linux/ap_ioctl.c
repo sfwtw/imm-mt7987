@@ -817,6 +817,10 @@ INT rt28xx_ap_ioctl(void *net_dev_obj, void *data_obj, int cmd) /* snowpin for a
 
 	case SIOCGIWAP: { /*get access point MAC addresses */
 		/*				PCHAR pBssidStr; */
+		wdev = pIoctlConfig->wdev;
+		if (wdev && wdev->if_up_down_state == FALSE) {
+			return -ENETDOWN;
+		}
 		wrqin->u.ap_addr.sa_family = ARPHRD_ETHER;
 		/*memcpy(wrqin->u.ap_addr.sa_data, &pAd->ApCfg.MBSSID[pObj->ioctl_if].Bssid, ETH_ALEN); */
 		RTMP_AP_IoctlHandle(pAd, wrq, CMD_RTPRIV_IOCTL_AP_SIOCGIWAP, 0,
@@ -847,8 +851,6 @@ INT rt28xx_ap_ioctl(void *net_dev_obj, void *data_obj, int cmd) /* snowpin for a
 
 		wdev = pIoctlConfig->wdev;
 		if (wdev->if_up_down_state == FALSE) {
-			MTWF_DBG(pAd, DBG_CAT_CFG, CATCFG_CMD, DBG_LVL_ERROR,
-			"RT_PRIV_IOCTL interface is down, cmd [%x] return!!!\n", cmd);
 			return -ENETDOWN;
 		}
 		powerval = rtmp_get_macPower(pAd);
@@ -909,8 +911,6 @@ INT rt28xx_ap_ioctl(void *net_dev_obj, void *data_obj, int cmd) /* snowpin for a
 		subcmd = wrqin->u.data.flags;
 		if ((wdev != NULL) && (wdev->if_up_down_state == FALSE)
 				&& (subcmd!= OID_802_11_COUNTRYCODE)) {
-			MTWF_DBG(pAd, DBG_CAT_CFG, CATCFG_CMD, DBG_LVL_ERROR,
-				"interface is down, cmd [%x] return!!!\n", cmd);
 			return -ENETDOWN;
 		}
 #ifdef RT_CFG80211_SUPPORT
@@ -951,8 +951,6 @@ INT rt28xx_ap_ioctl(void *net_dev_obj, void *data_obj, int cmd) /* snowpin for a
 		wdev = pIoctlConfig->wdev;
 
 		if ((wdev != NULL) && (wdev->if_up_down_state == FALSE)) {
-			MTWF_DBG(pAd, DBG_CAT_CFG, CATCFG_CMD, DBG_LVL_ERROR,
-				"interface is down, cmd [%x] return!!!\n", cmd);
 			return -ENETDOWN;
 		}
 #if (KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE)
@@ -975,8 +973,6 @@ INT rt28xx_ap_ioctl(void *net_dev_obj, void *data_obj, int cmd) /* snowpin for a
 		wdev = pIoctlConfig->wdev;
 
 		if ((wdev != NULL) && (wdev->if_up_down_state == FALSE)) {
-			MTWF_DBG(pAd, DBG_CAT_CFG, CATCFG_CMD, DBG_LVL_ERROR,
-				"interface is down, cmd [%x] return!!!\n", cmd);
 			return -ENETDOWN;
 		}
 #if (KERNEL_VERSION(5, 0, 0) > LINUX_VERSION_CODE)
@@ -1025,8 +1021,6 @@ INT rt28xx_ap_ioctl(void *net_dev_obj, void *data_obj, int cmd) /* snowpin for a
 		wdev = pIoctlConfig->wdev;
 		wrq->u.data.flags = wrqin->u.data.flags;
 		if ((wdev != NULL) && (wdev->if_up_down_state == FALSE)) {
-			MTWF_DBG(pAd, DBG_CAT_CFG, CATCFG_CMD, DBG_LVL_ERROR,
-				"interface is down, cmd [%x] return!!!\n", cmd);
 			return -ENETDOWN;
 		}
 		printk("iwinfo signal is coming");

@@ -5691,8 +5691,6 @@ INT RTMPAPSetInformation(
 		}
 
 		if (wdev->if_up_down_state == FALSE) {
-			MTWF_DBG(pAd, DBG_CAT_CFG, CATCFG_DBGLOG, DBG_LVL_ERROR,
-				"interface is down, return!\n");
 			os_free_mem(Buf);
 			break;
 		}
@@ -6636,8 +6634,6 @@ INT RTMPAPSetInformation(
 		wdev = &pAd->ApCfg.MBSSID[ifIndex].wdev;
 
 		if (wdev->if_up_down_state == FALSE) {
-			MTWF_DBG(pAd, DBG_CAT_CFG, CATCFG_VENDOR, DBG_LVL_ERROR,
-				"interface is down, return!\n");
 			break;
 		}
 
@@ -6709,8 +6705,6 @@ INT RTMPAPSetInformation(
 		}
 
 		if (wdev->if_up_down_state == FALSE) {
-			MTWF_DBG(pAd, DBG_CAT_CFG, CATCFG_VENDOR, DBG_LVL_ERROR,
-				"interface is down, return!\n");
 			break;
 		}
 
@@ -6811,8 +6805,6 @@ INT RTMPAPSetInformation(
 		}
 
 		if (wdev->if_up_down_state == FALSE) {
-			MTWF_DBG(pAd, DBG_CAT_CFG, CATCFG_VENDOR, DBG_LVL_ERROR,
-				"interface is down, return!\n");
 			break;
 		}
 
@@ -6876,8 +6868,6 @@ INT RTMPAPSetInformation(
 		}
 
 		if (wdev->if_up_down_state == FALSE) {
-			MTWF_DBG(pAd, DBG_CAT_CFG, CATCFG_VENDOR, DBG_LVL_ERROR,
-				"interface is down, return!\n");
 			break;
 		}
 
@@ -6924,8 +6914,6 @@ INT RTMPAPSetInformation(
 		}
 
 		if (wdev->if_up_down_state == FALSE) {
-			MTWF_DBG(pAd, DBG_CAT_CFG, CATCFG_VENDOR, DBG_LVL_ERROR,
-				"interface is down, return!\n");
 			break;
 		}
 
@@ -7043,8 +7031,6 @@ INT RTMPAPSetInformation(
 		}
 
 		if (wdev->if_up_down_state == FALSE) {
-			MTWF_DBG(pAd, DBG_CAT_CFG, CATCFG_VENDOR, DBG_LVL_ERROR,
-				"interface is down, return!\n");
 			break;
 		}
 
@@ -7284,8 +7270,6 @@ INT RTMPAPSetInformation(
 			}
 
 			if (wdev->if_up_down_state == FALSE) {
-				MTWF_DBG(pAd, DBG_CAT_TX, CATTX_DABS_QOS, DBG_LVL_ERROR,
-					"interface is down, return!\n");
 				break;
 			}
 
@@ -7367,8 +7351,6 @@ INT RTMPAPSetInformation(
 			}
 
 			if (wdev->if_up_down_state == FALSE) {
-				MTWF_DBG(pAd, DBG_CAT_TX, CATTX_DABS_QOS, DBG_LVL_ERROR,
-					"interface is down, return!\n");
 				break;
 			}
 
