@@ -13,6 +13,7 @@ start_service() {
     local enabled
     config_get enabled settings enabled
     [ "$enabled" = "1" ] || { logger -t fancontrol "Instance \"$NAME\" disabled."; return 1; }
+    echo disabled > /sys/class/thermal/thermal_zone0/mode
 
     local thermal_file
     local fan_file
@@ -27,6 +28,10 @@ start_service() {
     config_get start_speed settings start_speed
     config_get max_speed settings max_speed
     config_get temp_div settings temp_div
+    config_get monitor_interval settings monitor_interval
+    config_get temp_threshold settings temp_threshold
+    config_get max_temp settings max_temp
+    config_get curve_type settings curve_type
 
     procd_open_instance
     procd_set_param command $PROG
@@ -36,6 +41,10 @@ start_service() {
     [ -n "$start_speed" ] && procd_append_param command -s "$start_speed"
     [ -n "$max_speed" ] && procd_append_param command -m "$max_speed"
     [ -n "$temp_div" ] && procd_append_param command -d "$temp_div"
+    [ -n "$monitor_interval" ] && procd_append_param command -i "$monitor_interval"
+    [ -n "$temp_threshold" ] && procd_append_param command -h "$temp_threshold"
+    [ -n "$max_temp" ] && procd_append_param command -M "$max_temp"
+    [ -n "$curve_type" ] && procd_append_param command -C "$curve_type"
     procd_set_param respawn
     procd_close_instance
 }

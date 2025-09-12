@@ -39,3 +39,51 @@ msgstr "当前速度："
 
 msgid "Current temperature:"
 msgstr "当前温度："
+
+msgid "Monitor Interval"
+msgstr "监控间隔"
+
+msgid "Please enter the fan monitor nterval."
+msgstr "请输入风扇监控间隔。"
+
+msgid "Temp Threshold"
+msgstr "温度变化阈值"
+
+msgid "Please enter the fan temp threshold."
+msgstr "请输入温度变化阈值。"
+
+msgid "Max Temperature"
+msgstr "最高温度"
+
+msgid "Please enter the maximum temperature for full speed."
+msgstr "请输入满转速的最高温度。"
+
+msgid "Max temperature must be greater than or equal to start temperature."
+msgstr "最高温度必须大于或等于启动温度。"
+
+msgid "Max temperature must be less than or equal to 120°C."
+msgstr "最高温度必须小于或等于120°C。"
+
+msgid "Speed Mapping"
+msgstr "速度映射"
+
+msgid "Temperature to PWM mapping based on temp_threshold."
+msgstr "基于温度变化阈值的温度到PWM映射。"
+
+msgid "Curve Type"
+msgstr "曲线类型"
+
+msgid "Linear"
+msgstr "线性"
+
+msgid "Upward"
+msgstr "向上弯"
+
+msgid "Downward"
+msgstr "向下弯"
+
+msgid "Curve Curvature"
+msgstr "曲线曲率"
+
+msgid "Please enter a valid number."
+msgstr "请输入有效的数字。"

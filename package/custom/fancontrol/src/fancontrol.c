@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <signal.h> 
+#include <math.h>
 
 #define MAX_LENGTH 200
 #define MAX_TEMP 120
@@ -17,6 +18,15 @@ int start_temp = 45;    // -t
 int max_speed = 255;    // -m
 int temp_div = 1000;    // -d
 int debug_mode = 0;     // -D
+int monitor_interval = 5;  // -i 监控间隔(秒)
+int temp_threshold = 2;     // -h 温度变化阈值(°C)
+int max_temp = 120;     // -M 最高温度满转速
+char curve_type_str[20] = "0"; // -C 曲线类型
+double curve_type = 0.0;
+
+// 全局变量保存上次状态
+static int last_temperature = -1;
+static int last_fan_speed = -1;
 
 /**
  * 底层读文件
@@ -93,11 +103,24 @@ int set_fanspeed(int fan_speed ,char* fan_file) {
 /**
  * 计算风扇转速
  */
-int calculate_speed(int current_temp ,int max_temp ,int min_temp ,int max_speed ,int min_speed) {
+int calculate_speed(int current_temp ,int max_temp ,int min_temp ,int max_speed ,int min_speed ,double curve_type) {
     if (current_temp < min_temp) {
         return 0;
     }
-    int fan_speed = ( current_temp - min_temp ) * ( max_speed - min_speed ) / ( max_temp - min_temp ) + min_speed;
+    double ratio = (double)(current_temp - min_temp) / (max_temp - min_temp);
+    double adjusted_ratio;
+    if (curve_type != 0.0) {
+        // 使用Sigmoid函数作为平滑曲线模型，调整起点终点之间曲线的平滑曲率
+        double k = curve_type;
+        double m = 0.5; // 中点
+        double s0 = 1.0 / (1.0 + exp(k * m)); // sigmoid(0, k, m)
+        double s1 = 1.0 / (1.0 + exp(-k * (1.0 - m))); // sigmoid(1, k, m)
+        double s_ratio = 1.0 / (1.0 + exp(-k * (ratio - m)));
+        adjusted_ratio = (s_ratio - s0) / (s1 - s0);
+    } else {
+        adjusted_ratio = ratio;
+    }
+    int fan_speed = min_speed + (max_speed - min_speed) * adjusted_ratio;
     if (fan_speed > max_speed) {
         fan_speed = max_speed;
     }
@@ -139,7 +162,7 @@ void register_signal_handlers( ) {
 int main(int argc ,char* argv[ ]) {
     // 解析命令行选项
     int opt;
-    while (( opt = getopt(argc ,argv ,"T:F:s:t:m:d:D:v:") ) != -1) {
+    while (( opt = getopt(argc ,argv ,"T:F:s:t:m:d:D:i:h:M:C:v:") ) != -1) {
         switch (opt) {
             case 'T':
                 snprintf(thermal_file ,sizeof(thermal_file) ,"%s" ,optarg);
@@ -162,6 +185,20 @@ int main(int argc ,char* argv[ ]) {
             case 'D':
                 debug_mode = atoi(optarg);
                 break;
+            case 'i':
+                monitor_interval = atoi(optarg);
+                if (monitor_interval < 1) monitor_interval = 1;
+                break;
+            case 'h':
+                temp_threshold = atoi(optarg);
+                if (temp_threshold < 0) temp_threshold = 0;
+                break;
+            case 'M':
+                max_temp = atoi(optarg);
+                break;
+            case 'C':
+                curve_type = atof(optarg);
+                break;
             default:
                 fprintf(stderr ,"Usage: %s [option]\n"
                     "          -T sysfs         # temperature sysfs file, default is '%s'\n"
@@ -170,7 +207,11 @@ int main(int argc ,char* argv[ ]) {
                     "          -t temperature   # fan start temperature, default is %d°C\n"
                     "          -m speed         # fan maximum speed, default is %d\n"
                     "          -d div           # temperature divide, default is %d\n"
-                    "          -v               # verbose\n" ,argv[0] ,thermal_file ,fan_file ,start_speed ,start_temp ,max_speed ,temp_div);
+                    "          -i interval      # monitor interval in seconds, default is %d\n"
+                    "          -h threshold     # temperature change threshold in °C, default is %d\n"
+                    "          -M temperature   # maximum temperature for full speed, default is %d°C\n"
+                    "          -C curvature     # curve curvature, positive for upward, negative for downward, default is 0.0\n"
+                    "          -v               # verbose\n" ,argv[0] ,thermal_file ,fan_file ,start_speed ,start_temp ,max_speed ,temp_div ,monitor_interval ,temp_threshold ,max_temp ,curve_type);
                 exit(EXIT_FAILURE);
         }
     }
@@ -186,15 +227,31 @@ int main(int argc ,char* argv[ ]) {
     // 监控风扇
     while (1) {
         int temperature = get_temperature(thermal_file ,temp_div);
-        // 有效温度时设置风扇速度
+        
+        // 检查温度是否有效
         if (temperature > 0) {
-            int fan_speed = calculate_speed(temperature ,MAX_TEMP ,start_temp ,max_speed ,start_speed);
-            set_fanspeed(fan_speed ,fan_file);
+            // 检查温度变化是否超过阈值，避免频繁调整
+            if (last_temperature == -1 || abs(temperature - last_temperature) >= temp_threshold) {
+                int fan_speed = calculate_speed(temperature ,max_temp ,start_temp ,max_speed ,start_speed, curve_type);
+                
+                // 只有风扇速度变化时才写入
+                if (fan_speed != last_fan_speed) {
+                    set_fanspeed(fan_speed ,fan_file);
+                    last_fan_speed = fan_speed;
+                }
+                
+                last_temperature = temperature;
+                
+                if (debug_mode) {
+                    fprintf(stdout ,"Temperature: %d°C, Fan Speed: %d\n" ,temperature ,fan_speed);
+                }
+            } else if (debug_mode) {
+                // 温度变化不大时，仅在调试模式下显示当前状态
+                fprintf(stdout ,"Temperature stable: %d°C (threshold: %d°C)\n" ,temperature ,temp_threshold);
+            }
         }
-        if (debug_mode) {
-            fprintf(stdout ,"Temperature: %d°C, Fan Speed: %d\n" ,get_temperature(thermal_file ,temp_div) ,get_fanspeed(fan_file));
-        }
-        sleep(5);
+        
+        sleep(monitor_interval);
     }
     return 0;
 }
