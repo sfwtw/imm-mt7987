@@ -138,6 +138,7 @@ platform_do_upgrade() {
 	glinet,gl-mt6000|\
 	glinet,gl-x3000|\
 	glinet,gl-xe3000|\
+	hiveton,h5000m|\
 	huasifei,wh3000-emmc|\
 	huasifei,wh3000-pro|\
 	smartrg,sdg-8612|\
