@@ -817,10 +817,6 @@ INT rt28xx_ap_ioctl(void *net_dev_obj, void *data_obj, int cmd) /* snowpin for a
 
 	case SIOCGIWAP: { /*get access point MAC addresses */
 		/*				PCHAR pBssidStr; */
-		wdev = pIoctlConfig->wdev;
-		if (wdev && wdev->if_up_down_state == FALSE) {
-			return -ENETDOWN;
-		}
 		wrqin->u.ap_addr.sa_family = ARPHRD_ETHER;
 		/*memcpy(wrqin->u.ap_addr.sa_data, &pAd->ApCfg.MBSSID[pObj->ioctl_if].Bssid, ETH_ALEN); */
 		RTMP_AP_IoctlHandle(pAd, wrq, CMD_RTPRIV_IOCTL_AP_SIOCGIWAP, 0,

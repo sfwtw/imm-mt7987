@@ -548,8 +548,12 @@ u8 *build_rnr_ie(struct bmgr_entry *repting_entry, struct bmgr_entry *repted_ent
 		nap_info.op_class = repted_entry->entry_info.op_class;
 		nap_info.ch_num = repted_entry->entry_info.channel;
 
-		NdisMoveMemory(pos, (u8 *)&nap_info, sizeof(nap_info));
-		pos += sizeof(nap_info);
+		// 修改为逐字节写入，避免 field-spanning write
+        u16 tbtt_info_hdr_le = cpu_to_le16(nap_info.tbtt_info_hdr);
+        *pos++ = (u8)(tbtt_info_hdr_le);
+        *pos++ = (u8)(tbtt_info_hdr_le >> 8);
+        *pos++ = nap_info.op_class;
+        *pos++ = nap_info.ch_num;
 
 		/* TBTT Information - Neighbor AP TBTT Offset */
 		if (bmap->nap_tbtt_offset) {
@@ -576,8 +580,11 @@ u8 *build_rnr_ie(struct bmgr_entry *repting_entry, struct bmgr_entry *repted_ent
 			u32 s_ssid = Crcbitbybitfast(repted_entry->entry_info.ssid, repted_entry->entry_info.ssid_len);
 
 			s_ssid = cpu_to_le32(s_ssid);
-			NdisMoveMemory(pos, &s_ssid, sizeof(s_ssid));
-			pos += sizeof(s_ssid);
+			// 修改为逐字节写入，避免 field-spanning write
+            *pos++ = (u8)(s_ssid);
+            *pos++ = (u8)(s_ssid >> 8);
+            *pos++ = (u8)(s_ssid >> 16);
+            *pos++ = (u8)(s_ssid >> 24);
 		}
 
 		/* TBTT Information - BSS parameters */
@@ -638,8 +645,10 @@ u8 *build_rnr_ie(struct bmgr_entry *repting_entry, struct bmgr_entry *repted_ent
 			SET_TBTT_INFO_MLD_PARAM_DLI(mld_param, dli);
 
 			mld_param = cpu_to_le32(mld_param);
-			NdisMoveMemory(pos, (u8 *)&mld_param, 3);
-			pos += 3;
+			// 修改为逐字节写入，避免 field-spanning write (仅复制3字节)
+            *pos++ = (u8)(mld_param);
+            *pos++ = (u8)(mld_param >> 8);
+            *pos++ = (u8)(mld_param >> 16);
 		}
 #endif
 		/* TBTT Information - dummy byte if tbtt_info_len = 17  */

@@ -24,7 +24,7 @@ uci batch <<-EOF
 EOF
 
 uci batch <<-EOF
-	set wireless.@wifi-device[0].disabled=1
+	#set wireless.@wifi-device[0].disabled=1
 	commit wireless
 EOF
 

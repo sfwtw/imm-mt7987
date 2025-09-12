@@ -341,22 +341,26 @@ static void gmac_ppe_fwd_enable(struct net_device *dev)
 
 void ppd_dev_setting(void)
 {
-	struct net_device *br_dev;
-	br_dev = __dev_get_by_name(&init_net, "br-lan");
-		if (br_dev) {
-                        struct net_device *dev;
-                        struct list_head *pos;
-                	netdev_for_each_lower_dev(br_dev, dev, pos) {
-                        	if (dev->flags & IFF_UP) {
-                              		if (netif_carrier_ok(dev)){
-					ppd_dev = __dev_get_by_name(&init_net, dev->name);
-                                	break;
-					}
-                                }
-                        }
+    struct net_device *br_dev;
+    rcu_read_lock_bh();  // 添加 RCU 读锁
+    br_dev = __dev_get_by_name(&init_net, "br-lan");
+    if (br_dev) {
+        struct net_device *dev;
+        struct list_head *pos;
+        netdev_for_each_lower_dev(br_dev, dev, pos) {
+            if (dev->flags & IFF_UP) {
+                if (netif_carrier_ok(dev)){
+                    ppd_dev = __dev_get_by_name(&init_net, dev->name);
+                    break;
                 }
-	printk("\nrx now ppd dev is %s\n",hnat_priv->g_ppdev->name);
-        printk("\ntx now ppd dev is %s\n",ppd_dev->name);
+            }
+        }
+    }
+    if (hnat_priv->g_ppdev)  // 添加 NULL 检查
+        printk("\nrx now ppd dev is %s\n", hnat_priv->g_ppdev->name);
+    if (ppd_dev)  // 添加 NULL 检查
+        printk("\ntx now ppd dev is %s\n", ppd_dev->name);
+    rcu_read_unlock_bh();  // 添加 RCU 读解锁
 }
 
 int nf_hnat_netdevice_event(struct notifier_block *unused, unsigned long event,
@@ -2126,8 +2130,15 @@ static unsigned int skb_to_hnat_info(struct sk_buff *skb,
 	/* Before entry enter BIND state, write other fields first,
 	 * prevent racing with hardware accesses.
 	 */
-	memcpy(&(foe->ipv6_hnapt.ipv6_sip0), &(entry.ipv6_hnapt.ipv6_sip0),
-		       sizeof(struct foe_entry) - sizeof(entry.bfib1));
+	/*
+	 * 修复：原实现以 union 成员 ipv6_sip0 地址做整块 memcpy，触发
+	 * FORTIFY(field-spanning write)。改为基于 bfib1 之后的真实字节偏移复制。
+	 */
+	{
+		size_t off = offsetof(struct foe_entry, bfib1) + sizeof(entry.bfib1);
+		size_t len = sizeof(struct foe_entry) - off;
+		memcpy((u8 *)foe + off, (u8 *)&entry + off, len);
+	}
 	/* We must ensure all info has been updated before set to hw */
 	wmb();
 	/* After other fields have been written, write info1 to BIND the entry */
@@ -2403,8 +2414,16 @@ int mtk_sw_nat_hook_tx(struct sk_buff *skb, int gmac_no)
 	/* Before entry enter BIND state, write other fields first,
          * prevent racing with hardware accesses.
          */
-	memcpy(&(hw_entry->ipv6_hnapt.ipv6_sip0), &(entry.ipv6_hnapt.ipv6_sip0),
-		       sizeof(struct foe_entry) - sizeof(entry.bfib1));
+	/*
+	 * 旧实现利用某 union 成员首字段地址做大块 memcpy，触发 FORTIFY(field-spanning write)。
+	 * 修复：基于结构体偏移，从 bfib1 之后按字节偏移复制剩余部分，避免把单字段指针
+	 * 当作大块区域首地址。
+	 */
+	{
+		size_t off = offsetof(struct foe_entry, bfib1) + sizeof(entry.bfib1);
+		size_t len = sizeof(struct foe_entry) - off;
+		memcpy((u8 *)hw_entry + off, (u8 *)&entry + off, len);
+	}
         /* We must ensure all info has been updated before set to hw */
         wmb();
         /* After other fields have been writtefn, write info1 to BIND the entry */
