@@ -16,3 +16,5 @@ INDEX0_mesh_ifname=mesh;meshi
 INDEX0_nvram_zone=dev00;dev01
 INDEX0_single_sku_path=/rom/etc/wireless/mediatek/bellwether-sku.dat
 INDEX0_bf_sku_path=/rom/etc/wireless/mediatek/bellwether-sku-bf.dat
+INDEX0_debug_level=0
+INDEX0_debug_option=0

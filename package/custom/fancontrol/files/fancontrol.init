@@ -14,6 +14,7 @@ start_service() {
     config_get enabled settings enabled
     [ "$enabled" = "1" ] || { logger -t fancontrol "Instance \"$NAME\" disabled."; return 1; }
     echo disabled > /sys/class/thermal/thermal_zone0/mode
+    echo 100000 > /sys/class/hwmon/hwmon2/pwm1_freq
 
     local thermal_file
     local fan_file
