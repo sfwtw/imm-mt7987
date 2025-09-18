@@ -181,6 +181,9 @@ return view.extend({
 		o = s.option(form.Value, 'fan_file', _('Fan File'), '');
 		// o.placeholder = '/sys/devices/virtual/thermal/cooling_device0/cur_state';
 
+		o = s.option(form.Value, 'fan_freq', _('Fan Freq'), '');
+		o.placeholder = '50000';
+
 		return m.render();
 	}
 });

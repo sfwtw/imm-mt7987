@@ -13,6 +13,9 @@ msgstr "温度文件"
 msgid "Fan File"
 msgstr "风扇控制"
 
+msgid "Fan Freq"
+msgstr "风扇PWM频率"
+
 msgid "Fan Speed File"
 msgstr "风扇速度虚拟文件"
 
