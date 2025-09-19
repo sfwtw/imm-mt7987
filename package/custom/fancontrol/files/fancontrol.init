@@ -1,6 +1,6 @@
 #!/bin/sh /etc/rc.common
 
-START=01
+START=99
 STOP=01
 USE_PROCD=1
 
@@ -24,9 +24,13 @@ start_service() {
 
     config_get thermal_file settings thermal_file
     config_get fan_file settings fan_file
-    [ -n "$fan_file" ] && echo '1' > $fan_file'_enable'
+    if ! echo '1' > "${fan_file}_enable"; then
+        logger -t fancontrol "Failed to enable fan"
+    fi
     config_get fan_freq settings fan_freq
-    [ -n "$fan_freq" ] && echo "$fan_freq" > $fan_file'_freq'
+    if ! echo "$fan_freq" > "${fan_file}_freq"; then
+        logger -t fancontrol "Failed to set fan frequency"
+    fi
     config_get start_temp settings start_temp
     config_get start_speed settings start_speed
     config_get max_speed settings max_speed

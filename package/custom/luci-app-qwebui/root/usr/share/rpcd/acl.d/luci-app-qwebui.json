@@ -1,0 +1,28 @@
+{
+	"luci-app-qwebui": {
+		"description": "Qmodem WebUI",
+		"read": {
+			"uci": [
+				"qwebui"
+			],
+			"file": {
+				"/sys/class/thermal/*/*": [
+					"read"
+				],
+				"/sys/class/hwmon/*/pwm*": [
+					"read"
+				]
+			}
+		},
+		"write": {
+			"uci": [
+				"qwebui"
+			],
+			"file": {
+				"/sys/class/hwmon/*/pwm*": [
+					"write"
+				]
+			}
+		}
+	}
+}

@@ -399,8 +399,7 @@ static umode_t pwm_fan_is_visible(const void *data,
 {
 	switch (type) {
 	case hwmon_pwm:
-			return 0644;
-		}
+		return 0644;
 
 	case hwmon_fan:
 		return 0444;
