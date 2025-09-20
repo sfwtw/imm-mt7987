@@ -64,7 +64,7 @@ index be09568..396b948 100644
 +	.regmap = {
 +		.wed_rev_id		= 0x4,
 +		.tx_bm_tkid		= 0x0c8,
-+		.wpdma_rx_ring0		= 0,
++		.wpdma_rx_ring		= {0, 0},
 +		.reset_idx_tx_mask	= GENMASK(1, 0),
 +		.reset_idx_rx_mask	= GENMASK(7, 6),
 +		.msdu_pg_ring2_cfg	= 0xe2c,
@@ -153,7 +153,7 @@ index be09568..396b948 100644
 +		}
  	}
 -
- 	/* eagle E1 PCIE1 tx ring 22 flow control issue */
+ 	/* Kite and Eagle E1 PCIE1 tx ring 22 flow control issue */
  	if (dev->wlan.id == 0x7991 || dev->wlan.id == 0x7992)
  		wed_clr(dev, MTK_WED_AMSDU_FIFO, MTK_WED_AMSDU_IS_PRIOR0_RING);
 @@ -638,7 +668,10 @@ mtk_wed_tx_buffer_alloc(struct mtk_wed_device *dev)
