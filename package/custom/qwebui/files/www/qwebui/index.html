@@ -221,8 +221,12 @@
                         <td x-text="bands"></td>
                       </tr>
                       <tr>
-                        <th scope="row">带宽</th>
-                        <td x-text="bandwidth"></td>
+                        <th scope="row">下行带宽</th>
+                        <td x-text="dlbandwidth"></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">上行带宽</th>
+                        <td x-text="ulbandwidth"></td>
                       </tr>
                       <tr>
                         <th scope="row">频点</th>
@@ -636,7 +640,8 @@
           apn: "未知",
           networkMode: "已断开",
           bands: "未知",
-          bandwidth: "未知",
+          dlbandwidth: "未知",
+          ulbandwidth: "未知",
           earfcns: "000",
           pccPCI: "0",
           sccPCI: "-",
@@ -1044,9 +1049,9 @@
               } else if (entry.key === 'Band') {
                 this.bands = entry.value;
               } else if (entry.key === 'DL Bandwidth') {
-                this.bandwidth = entry.value;
+                this.dlbandwidth = entry.value;
               } else if (entry.key === 'UL Bandwidth') {
-                this.bandwidth += ' / ' + entry.value;
+                this.ulbandwidth += ' / ' + entry.value;
               } else if (entry.key === 'ARFCN') {
                 this.earfcns = entry.value;
               } else if (entry.key === 'Physical Cell ID') {

@@ -7,7 +7,7 @@
 include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=LuCI support for Qmodem WEBUI
-LUCI_DEPENDS:=+luci +luci-app-qmodem
+LUCI_DEPENDS:=+luci +luci-app-qmodem +qwebui
 LUCI_PKGARCH:=all
 
 PKG_NAME:=luci-app-qwebui
@@ -16,7 +16,3 @@ PKG_RELEASE:=1
 
 include $(TOPDIR)/feeds/luci/luci.mk
 # call BuildPackage - OpenWrt buildroot signature
-
-define Package/$(PKG_NAME)/install
-		$(CP) ./files/* $(1)/
-endef
