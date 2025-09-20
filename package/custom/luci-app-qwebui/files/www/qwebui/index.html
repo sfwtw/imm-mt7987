@@ -67,7 +67,9 @@
               </ul>
               <span class="navbar-text">
                 <select id="modemSelector" class="form-select me-2" x-model="selectedCfg" @change="changeCfg()">
-                  <option x-for="cfg in cfgList" :value="cfg.value" x-text="cfg.name"></option>
+                  <template x-for="cfg in cfgList" :key="cfg.value">
+                    <option :value="cfg.value" x-text="cfg.name"></option>
+                  </template>
                 </select>
                 <button class="btn btn-link text-reset" id="darkModeToggle">
                   Dark Mode
@@ -662,7 +664,7 @@
           uptime: "Unknown",
           lastUpdate: new Date().toLocaleString(),
           newRefreshRate: null,
-          refreshRate: 3,
+          refreshRate: 6,
           nrDownload: "0",
           nrUpload: "0",
           nonNrDownload: "0",
@@ -672,824 +674,47 @@
           mccmncNumber: "未知",
           ambr: "未知",
           qci: "未知",
-
-          fetchAllInfo() {
-            this.atcmd =
-              'AT+QTEMP;+QUIMSLOT?;+QSPN;+CGCONTRDP=1;+QMAP="WWANIP";+QENG="servingcell";+QCAINFO;+QSIMSTAT?;+CSQ;+QGDNRCNT?;+QGDCNT?;+QNWCFG="nr5g_ambr"';
-
-            fetch(
-              "/cgi-bin/get_atcommand?" +
-                new URLSearchParams({
-                  atcmd: this.atcmd,
-                })
-            ).then((response) => {
-              response.text().then((data) => {
-                // content here
-                if (data.includes("ERROR")) {
-                  console.log("Error fetching data");
-                  this.activeSim = "Something went wrong.";
-                  return;
-                } else {
-                  const rawdata = data;
-                  const lines = rawdata.split("\n");
-
-                  console.log(lines);
-
-                  // --- Temperature ---
-                  // find this example value from lines "+QTEMP:"cpuss-0-usr","50"
-                  try {
-                    this.temperature = lines
-                      .find((line) => line.includes('+QTEMP:"cpuss-0-usr"'))
-                      .split(",")[1]
-                      .replace(/"/g, "");
-                  } catch (error) {
-                    this.temperature = lines
-                      .find((line) => line.includes('+QTEMP:"cpu0-a7-usr"'))
-                      .split(",")[1]
-                      .replace(/"/g, "");
-                  }
-
-                  // --- SIM Status ---
-                  // find this example value from lines "+QSIMSTAT: 0,1"
-                  // Only get the last digit of 0,1
-                  const sim_status = lines
-                    .find((line) => line.includes("+QSIMSTAT:"))
-                    .split(" ")[1]
-                    .replace(/"/g, "")
-                    .split(",")[1];
-
-                  if (sim_status == 1) {
-                    this.simStatus = "已激活";
-                  } else if (sim_status == 0) {
-                    this.simStatus = "无SIM卡";
-                  }
-
-                  // --- Active SIM ---
-                  // find this example value from lines "+QUIMSLOT: 1"
-                  const current_sim = lines
-                    .find((line) => line.includes("+QUIMSLOT:"))
-                    .split(" ")[1]
-                    .replace(/"/g, "");
-
-                  if (current_sim == 1) {
-                    this.activeSim = "SIM 1";
-                  } else if (current_sim == 2) {
-                    this.activeSim = "SIM 2";
-                  } else {
-                    this.activeSim = "无SIM";
-                  }
-
-                  // --- Network Provider ---
-                  // find this example value from lines "+QSPN: \"515 66\",\"515 66\",\"DITO\",0,\"51566\""
-                  // remove any spaces
-                  const network_provider = lines
-                    .find((line) => line.includes("+QSPN:"))
-                    .split(",")[0]
-                    .replace("+QSPN: ", "")
-                    .replace(/"/g, "")
-                    .replace(/ /g, "");
-
-                  // if network provider is composed of numbers and spaces, and no letters then use .split(",")[2]
-
-                    const mccmncMap = {
-                        "46000":"中国移动",
-                         "46001":"中国联通",  "46003":"中国电信",  "46009":"中国联通",
-                           "46011":"中国电信", "46015":"中国广电", "46020":"中国铁通"};
-
-                  // --- MCCMNC ---
-                  this.mccmnc = lines
-                    .find((line) => line.includes("+QSPN:"))
-                    .split(",")[4]
-                    .replace(/"/g, "");
-
-                  const mccmncNumber = Number(this.mccmnc);
-
-
-                  this.networkProvider = mccmncMap[mccmncNumber] || "未知运营商";
-
-
-                  // --- APN ---
-                  // find this example value from lines "+CGCONTRDP: 1,0,\"internet.dito.ph\",\"100.65.141.236\",\"36.5.141.64.76.204.39.68.23.210.251.16.49.239.42.149\", \"254.128.0.0.0.0.0.0.0.0.0.0.0.0.0.1\",\"131.226.72.19\",\"131.226.73.19\"\r"
-                  this.apn = lines
-                    .find((line) => line.includes("+CGCONTRDP:"))
-                    .split(",")[2]
-                    .replace(/"/g, "");
-
-                  // --- Network Mode ---
-                  // find this example value from lines "+QENG: \"servingcell\",\"NOCONN\",\"NR5G-SA\",\"TDD\",515,66,7000C4001,475,702000,620640,78,12,-83,-3,16,1,-\r"
-
-                  try {
-                    const network_mode = lines
-                      .find((line) => line.includes('+QENG: "servingcell"'))
-                      .split(",")[2]
-                      .replace(/"/g, "");
-
-                    const duplex_mode = lines
-                      .find((line) => line.includes('+QENG: "servingcell"'))
-                      .split(",")[3]
-                      .replace(/"/g, "");
-
-                      const network_ambr = lines
-                      .find((line) => line.includes('+QNWCFG: "nr5g_ambr"'))
-                      .split(",");
-                      		this.ambr = network_ambr[3].replace(/"/g, "") + " / " + network_ambr[5].replace(/"/g, "") ;
-                          		this.qci = network_ambr[2].replace(/"/g, "");
-
-                    if (network_mode == "NR5G-SA") {
-                      if (duplex_mode == "TDD") {
-                        this.networkMode = "5G SA TDD";
-                      } else if (duplex_mode == "FDD") {
-                        this.networkMode = "5G SA FDD";
-                      }
-                    }
-
-                    if (network_mode == "LTE") {
-                      // get the FDD | TDD value
-                      const is_tdd = lines
-                        .find((line) => line.includes('+QENG: "servingcell"'))
-                        .split(",")[3]
-                        .replace(/"/g, "");
-
-                      if (is_tdd == "TDD") {
-                        this.networkMode = "4G LTE TDD";
-                      } else if (is_tdd == "FDD") {
-                        this.networkMode = "4G LTE FDD";
-                      }
-                    }
-                  } catch (error) {
-                    // find this example value from lines "+QENG: \"LTE\",\"FDD\",515,03,22AE76D,398,1350,3,4,4,BF82,-110,-13,-78,10,6,200,-\r"
-
-                    const network_mode_lte = lines
-                      .find((line) => line.includes('+QENG: "LTE"'))
-                      .split(",")[0]
-                      .replace("+QENG: ", "")
-                      .replace(/"/g, "");
-
-                    try {
-                      // find this example value from lines "+QENG: \"NR5G-NSA\",515,03,843,-95,20,-11,528030,41,8,1\r"
-                      const network_mode_5g = lines
-                        .find((line) => line.includes('+QENG: "NR5G-NSA"'))
-                        .split(",")[0]
-                        .replace("+QENG: ", "")
-                        .replace(/"/g, "");
-
-                      this.networkMode = "5G NSA";
-                    } catch (error) {
-                      if (network_mode_lte == "FDD") {
-                        this.networkMode = "4G LTE FDD";
-                      } else if (network_mode_lte == "TDD") {
-                        this.networkMode = "4G LTE TDD";
-                      }
-                    }
-                  }
-
-                  // --- Bands ---
-                  // Get all the values with LTE BAND n (for example, LTE BAND 3, LTE BAND 1) and then store them in an array
-                  const bands = lines.filter((line) =>
-                    line.includes("LTE BAND")
-                  );
-
-                  // since it includes the whole line, we need to extract the band part only
-                  for (let i = 0; i < bands.length; i++) {
-                    bands[i] = bands[i].split(",")[3].replace(/"/g, "");
-                  }
-
-                  // Get all the values with NR BAND n (for example, NR BAND 3, NR BAND 1) and then store them in an array
-                  const bands_5g = lines.filter((line) =>
-                    line.includes("NR5G BAND")
-                  );
-
-                  // since it includes the whole line, we need to extract the band number only
-                  for (let i = 0; i < bands_5g.length; i++) {
-                    bands_5g[i] = bands_5g[i].split(",")[3].replace(/"/g, "");
-                  }
-
-                  // Combine the bands and bands_5g arrays seperated by a comma. however, bands or bands_5g can be empty
-                  if (bands.length > 0 && bands_5g.length > 0) {
-                    this.bands = bands.join(", ") + ", " + bands_5g.join(", ");
-                  } else if (bands.length > 0) {
-                    this.bands = bands.join(", ");
-                  } else if (bands_5g.length > 0) {
-                    this.bands = bands_5g.join(", ");
-                  } else {
-                    this.bands = "无频段";
-                  }
-
-                  // --- Bandwidth ---
-                  if (
-                    this.networkMode == "5G SA TDD" ||
-                    this.networkMode == "5G SA FDD"
-                  ) {
-                    // find this example value from lines "+QENG: \"servingcell\"
-                    const bandwidth_line = lines.find((line) =>
-                      line.includes('+QENG: "servingcell"')
-                    );
-                    const nr_bw = bandwidth_line.split(",")[11];
-                    const calculated_bandwidth = this.calculate_nr_bw(nr_bw);
-                    this.bandwidth = "NR " + calculated_bandwidth + " MHz";
-                  } else if (
-                    this.networkMode == "4G LTE FDD" ||
-                    this.networkMode == "4G LTE TDD"
-                  ) {
-                    // find this example value from lines "+QENG: \"servingcell\"
-                    const bandwidth_line = lines.find((line) =>
-                      line.includes('+QENG: "servingcell"')
-                    );
-
-                    const lte_bw_ul = bandwidth_line.split(",")[10];
-                    const lte_bw_dl = bandwidth_line.split(",")[11];
-                    const calculated_bandwidth_ul =
-                      this.calculate_lte_bw(lte_bw_ul);
-                    const calculated_bandwidth_dl =
-                      this.calculate_lte_bw(lte_bw_dl);
-                    this.bandwidth =
-                      calculated_bandwidth_ul +
-                      " UL / " +
-                      calculated_bandwidth_dl +
-                      " DL MHz";
-                  } else if (this.networkMode == "5G NSA") {
-                    // find this example value from lines "+QENG: \"LTE\" for LTE
-                    const lte_bandwidth_line = lines.find((line) =>
-                      line.includes('+QENG: "LTE"')
-                    );
-
-                    const lte_bw_ul = lte_bandwidth_line.split(",")[8];
-                    const lte_bw_dl = lte_bandwidth_line.split(",")[9];
-
-                    const calculated_bandwidth_ul =
-                      this.calculate_lte_bw(lte_bw_ul);
-                    const calculated_bandwidth_dl =
-                      this.calculate_lte_bw(lte_bw_dl);
-
-                    // find this example value from lines "+QENG: \"NR5G-NSA\" for NR5G
-                    const nr_bandwidth_line = lines.find((line) =>
-                      line.includes('+QENG: "NR5G-NSA"')
-                    );
-
-                    const nr_bw = nr_bandwidth_line.split(",")[9];
-                    const calculated_bandwidth = this.calculate_nr_bw(nr_bw);
-
-                    // combine the bandwidths
-                    this.bandwidth =
-                      calculated_bandwidth_ul +
-                      " UL / " +
-                      calculated_bandwidth_dl +
-                      " DL MHz" +
-                      " / NR " +
-                      calculated_bandwidth +
-                      " MHz";
-                  } else {
-                    this.bandwidth = "未知带宽";
-                  }
-
-                  // --- E/ARFCN ---
-                  if (
-                    this.networkMode == "5G SA TDD" ||
-                    this.networkMode == "5G SA FDD"
-                  ) {
-                    // find this value from lines "+QCAINFO: \"PCC\"
-                    const nr_pcc_arfcn = lines
-                      .find((line) => line.includes('+QCAINFO: "PCC"'))
-                      .split(",")[1];
-
-                    try {
-                      // Look for all the lines with this value "+QCAINFO: \"SCC\" and store them in an array
-                      const nr_scc_arfcn = lines.filter((line) =>
-                        line.includes('+QCAINFO: "SCC"')
-                      );
-
-                      // if empty, then proceed to error block
-                      if (nr_scc_arfcn.length == 0) {
-                        throw "No SCC ARFCN";
-                      }
-
-                      // process all the values in the array and extract the ARFCN part only
-                      for (let i = 0; i < nr_scc_arfcn.length; i++) {
-                        nr_scc_arfcn[i] = nr_scc_arfcn[i].split(",")[1];
-                      }
-
-                      // combine the PCC and SCC ARFCN values
-                      this.earfcns =
-                        nr_pcc_arfcn + ", " + nr_scc_arfcn.join(", ");
-                    } catch (error) {
-                      this.earfcns = nr_pcc_arfcn.replace(/,/g, "");
-                    }
-                  } else if (
-                    this.networkMode == "4G LTE FDD" ||
-                    this.networkMode == "4G LTE TDD"
-                  ) {
-                    // find this value from lines "+QCAINFO: \"PCC\"
-                    const lte_pcc_arfcn = lines
-                      .find((line) => line.includes('+QCAINFO: "PCC"'))
-                      .split(",")[1];
-
-                    try {
-                      // Look for all the lines with this value "+QCAINFO: \"SCC\" and store them in an array
-                      const lte_scc_arfcn = lines.filter((line) =>
-                        line.includes('+QCAINFO: "SCC"')
-                      );
-
-                      // if empty, then proceed to error block
-                      if (lte_scc_arfcn.length == 0) {
-                        throw "No SCC ARFCN";
-                      }
-
-                      // process all the values in the array and extract the ARFCN part only
-                      for (let i = 0; i < lte_scc_arfcn.length; i++) {
-                        lte_scc_arfcn[i] = lte_scc_arfcn[i].split(",")[1];
-                      }
-
-                      // combine the PCC and SCC ARFCN values
-                      this.earfcns =
-                        lte_pcc_arfcn + ", " + lte_scc_arfcn.join(", ");
-                    } catch (error) {
-                      this.earfcns = lte_pcc_arfcn.replace(/,/g, "");
-                    }
-                  } else if (this.networkMode == "5G NSA") {
-                    // find this value from lines "+QCAINFO: \"PCC\"
-                    const lte_pcc_arfcn = lines
-                      .find((line) => line.includes('+QCAINFO: "PCC"'))
-                      .split(",")[5];
-
-                    try {
-                      // Look for all the lines with this value "+QCAINFO: \"SCC\" and store them in an array
-                      const lte_scc_arfcn = lines.filter((line) =>
-                        line.includes('+QCAINFO: "SCC"')
-                      );
-
-                      // If empty, then proceed to error block
-                      if (lte_scc_arfcn.length == 0) {
-                        throw "No SCC ARFCN";
-                      }
-
-                      // process all the values in the array and extract the ARFCN part only
-                      for (let i = 0; i < lte_scc_arfcn.length; i++) {
-                        lte_scc_arfcn[i] = lte_scc_arfcn[i].split(",")[1];
-                      }
-
-                      // combine the PCC and SCC ARFCN values
-                      this.earfcns =
-                        lte_pcc_arfcn + ", " + lte_scc_arfcn.join(", ");
-                    } catch (error) {
-                      this.earfcns = lte_pcc_arfcn.replace(/,/g, "");
-                    }
-                  } else {
-                    this.earfcns = "未知E/ARFCN";
-                  }
-
-                  // --- PCI ---
-                  if (
-                    this.networkMode == "5G SA TDD" ||
-                    this.networkMode == "5G SA FDD"
-                  ) {
-                    const nr_pcc_pci = lines
-                      .find((line) => line.includes('+QCAINFO: "PCC"'))
-                      .split(",")[4];
-
-                    try {
-                      // Look for all the lines with this value "+QCAINFO: \"SCC\" and store them in an array
-                      const nr_scc_pci = lines.filter((line) =>
-                        line.includes('+QCAINFO: "SCC"')
-                      );
-
-                      // if empty, then proceed to error block
-                      if (nr_scc_pci.length == 0) {
-                        throw "No SCC PCI";
-                      }
-
-                      // process all the values in the array and extract the PCI part only
-                      for (let i = 0; i < nr_scc_pci.length; i++) {
-                        nr_scc_pci[i] = nr_scc_pci[i].split(",")[5];
-                      }
-
-                      // combine the PCC and SCC PCI values
-                      this.pccPCI = nr_pcc_pci;
-                      this.sccPCI = nr_scc_pci.join(", ");
-                    } catch (error) {
-                      // remove comma if only one value
-                      this.pccPCI = nr_pcc_pci.replace(/,/g, "");
-                      this.sccPCI = "-";
-                    }
-                  } else if (
-                    this.networkMode == "4G LTE FDD" ||
-                    this.networkMode == "4G LTE TDD"
-                  ) {
-                    // find this value from lines "+QCAINFO: \"PCC\"
-                    const lte_pcc_pci = lines
-                      .find((line) => line.includes('+QCAINFO: "PCC"'))
-                      .split(",")[5];
-
-                    try {
-                      // Look for all the lines with this value "+QCAINFO: \"SCC\" and store them in an array
-                      const lte_scc_pci = lines.filter((line) =>
-                        line.includes('+QCAINFO: "SCC"')
-                      );
-
-                      // if empty, then proceed to error block
-                      if (lte_scc_pci.length == 0) {
-                        throw "No SCC PCI";
-                      }
-
-                      // process all the values in the array and extract the PCI part only
-                      for (let i = 0; i < lte_scc_pci.length; i++) {
-                        lte_scc_pci[i] = lte_scc_pci[i].split(",")[5];
-                      }
-
-                      // combine the PCC and SCC PCI values
-                      this.pccPCI = lte_pcc_pci;
-                      this.sccPCI = lte_scc_pci.join(", ");
-                    } catch (error) {
-                      this.pccPCI = lte_pcc_pci;
-                      this.sccPCI = "-";
-                    }
-                  } else if (this.networkMode == "5G NSA") {
-                    // find this value from lines "+QCAINFO: \"PCC\"
-                    const lte_pcc_pci = lines
-                      .find((line) => line.includes('+QCAINFO: "PCC"'))
-                      .split(",")[5];
-
-                    try {
-                      // Look for all the lines with this value "+QCAINFO: \"SCC\" and store them in an array
-                      const lte_scc_pci = lines.filter((line) =>
-                        line.includes('+QCAINFO: "SCC"')
-                      );
-
-                      // if empty, then proceed to error block
-                      if (lte_scc_pci.length == 0) {
-                        throw "No SCC PCI";
-                      }
-
-                      // process all the values in the array and extract the PCI part only
-                      for (let i = 0; i < lte_scc_pci.length; i++) {
-                        // if line contains LTE BAND then do this process
-                        if (lte_scc_pci[i].includes("LTE BAND")) {
-                          lte_scc_pci[i] = lte_scc_pci[i].split(",")[5];
-                        } else {
-                          lte_scc_pci[i] = lte_scc_pci[i].split(",")[4];
-                        }
-                      }
-
-                      // combine the PCC and SCC PCI values
-                      this.pccPCI = lte_pcc_pci;
-                      this.sccPCI = lte_scc_pci.join(", ");
-                    } catch (error) {
-                      this.pccPCI = lte_pcc_pci.replace(/,/g, "");
-                      this.sccPCI = "-";
-                    }
-                  } else {
-                    this.pccPCI = "0";
-                    this.sccPCI = "-";
-                  }
-
-                  // --- IPv4 and IPv6 ---
-                  // find the value from line "IPV4"
-                  this.ipv4 = lines
-                    .find((line) => line.includes("IPV4"))
-                    .split(",")[4]
-                    .replace(/"/g, "");
-
-                  // find the value from line "IPV6"
-                  this.ipv6 = lines
-                    .find((line) => line.includes("IPV6"))
-                    .split(",")[4]
-                    .replace(/"/g, "");
-
-                  // Traffic Stats
-                  // for NR traffic stats: +QGDNRCNT: 3263753367,109876105
-                  this.nrDownload = lines
-                    .find((line) => line.includes("+QGDNRCNT:"))
-                    .split(",")[0]
-                    // remove the +QGDNRCNT: part
-                    .replace("+QGDNRCNT: ", "");
-
-                  this.nrUpload = lines
-                    .find((line) => line.includes("+QGDNRCNT:"))
-                    .split(",")[1];
-
-                  // for non-NR traffic stats: +QGDCNT: 247357510,6864571506
-                  this.nonNrDownload = lines
-                    .find((line) => line.includes("+QGDCNT:"))
-                    .split(",")[1];
-
-                  this.nonNrUpload = lines
-                    .find((line) => line.includes("+QGDCNT:"))
-                    .split(",")[0]
-                    // remove the +QGDCNT: part
-                    .replace("+QGDCNT: ", "");
-
-                  // Add the nrDownload and nonNrDownload together
-                  this.downloadStat =
-                    parseInt(this.nrDownload) + parseInt(this.nonNrDownload);
-
-                  // Add the nrUpload and nonNrUpload together
-                  this.uploadStat =
-                    parseInt(this.nrUpload) + parseInt(this.nonNrUpload);
-
-                  // Convert the downloadStat and uploadStat bytes to readable size
-                  this.downloadStat = this.bytesToSize(this.downloadStat);
-                  this.uploadStat = this.bytesToSize(this.uploadStat);
-
-                  console.log(this.downloadStat);
-                  console.log(this.uploadStat);
-
-                  // Signal Informations
-
-                  const currentNetworkMode = this.networkMode;
-
-                  if (
-                    currentNetworkMode == "5G SA TDD" ||
-                    currentNetworkMode == "5G SA FDD" ||
-                    currentNetworkMode == "4G LTE FDD" ||
-                    currentNetworkMode == "4G LTE TDD"
-                  ) {
-                    // find the value from line "+QENG: \"servingcell\""
-                    // CellID
-                    const longCID = lines
-                      .find((line) => line.includes('+QENG: "servingcell"'))
-                      .split(",")[6]
-                      .replace(/"/g, "");
-
-                    // Get the eNBID. Its just Cell ID minus the last 2 characters
-                    this.eNBID = longCID.substring(0, longCID.length - 2);
-
-                    // Get the short Cell ID (Last 2 characters of the Cell ID)
-                    const shortCID = longCID.substring(longCID.length - 2);
-
-                    if (
-                      currentNetworkMode == "5G SA TDD" ||
-                      currentNetworkMode == "5G SA FDD"
-                    ) {
-                      // TAC
-                      this.tac = lines
-                        .find((line) => line.includes('+QENG: "servingcell"'))
-                        .split(",")[8]
-                        .replace(/"/g, "");
-
-                      // CSQ
-                      this.csq = "NR-SA Mode";
-
-                      // RSRP
-                      this.rsrpNR = lines
-                        .find((line) => line.includes('+QENG: "servingcell"'))
-                        .split(",")[12]
-                        .replace(/"/g, "");
-
-                      // RSRQ
-                      this.rsrqNR = lines
-                        .find((line) => line.includes('+QENG: "servingcell"'))
-                        .split(",")[13]
-                        .replace(/"/g, "");
-
-                      // SINR
-                      this.sinrNR = lines
-                        .find((line) => line.includes('+QENG: "servingcell"'))
-                        .split(",")[14]
-                        .replace(/"/g, "");
-
-                      // Calculate the RSRP Percentage
-                      this.rsrpNRPercentage = this.calculateRSRPPercentage(
-                        parseInt(this.rsrpNR)
-                      );
-
-                      // Calculate the RSRQ Percentage
-                      this.rsrqNRPercentage = this.calculateRSRQPercentage(
-                        parseInt(this.rsrqNR)
-                      );
-
-                      // Calculate the SINR Percentage
-                      this.sinrNRPercentage = this.calculateSINRPercentage(
-                        parseInt(this.sinrNR)
-                      );
-
-                      // Calculate the Signal Percentage
-                      this.signalPercentage = this.calculateSignalPercentage(
-                        this.rsrpNRPercentage,
-                        this.sinrNRPercentage
-                      );
-
-                      // Calculate the Signal Assessment
-                      this.signalAssessment = this.signalQuality(
-                        this.signalPercentage
-                      );
-                    } else {
-                      // LTE Only
-                      // TAC
-                      this.tac = lines
-                        .find((line) => line.includes('+QENG: "servingcell"'))
-                        .split(",")[12]
-                        .replace(/"/g, "");
-
-                      // CSQ
-                      this.csq = lines
-                        .find((line) => line.includes("+CSQ:"))
-                        .split(" ")[1]
-                        .replace("+CSQ: ", "")
-                        .replace(/"/g, "");
-
-                      // RSRP
-                      this.rsrpLTE = lines
-                        .find((line) => line.includes('+QENG: "servingcell"'))
-                        .split(",")[13]
-                        .replace(/"/g, "");
-
-                      // RSRQ
-                      this.rsrqLTE = lines
-                        .find((line) => line.includes('+QENG: "servingcell"'))
-                        .split(",")[14]
-                        .replace(/"/g, "");
-
-                      // // RSSI
-                      // this.rssi = lines
-                      //   .find((line) => line.includes('+QENG: "servingcell"'))
-                      //   .split(",")[15]
-                      //   .replace(/"/g, "");
-
-                      // SINR
-                      this.sinrLTE = lines
-                        .find((line) => line.includes('+QENG: "servingcell"'))
-                        .split(",")[16]
-                        .replace(/"/g, "");
-
-                      // Calculate the RSRP Percentage
-                      this.rsrpLTEPercentage = this.calculateRSRPPercentage(
-                        parseInt(this.rsrpLTE)
-                      );
-
-                      // Calculate the RSRQ Percentage
-                      this.rsrqLTEPercentage = this.calculateRSRQPercentage(
-                        parseInt(this.rsrqLTE)
-                      );
-
-                      // Calculate the SINR Percentage
-                      this.sinrLTEPercentage = this.calculateSINRPercentage(
-                        parseInt(this.sinrLTE)
-                      );
-
-                      // Calculate the Signal Percentage
-                      this.signalPercentage = this.calculateSignalPercentage(
-                        this.rsrpLTEPercentage,
-                        this.sinrLTEPercentage
-                      );
-
-                      // Calculate the Signal Assessment
-                      this.signalAssessment = this.signalQuality(
-                        this.signalPercentage
-                      );
-                    }
-
-                    this.cellID =
-                      "Short " +
-                      shortCID +
-                      "(" +
-                      parseInt(shortCID, 16) +
-                      ")" +
-                      ", " +
-                      "Long " +
-                      longCID +
-                      "(" +
-                      parseInt(longCID, 16) +
-                      ")";
-                  } else if (currentNetworkMode == "5G NSA") {
-                    // find the value from line "+QENG: \"LTE\" for LTE
-                    // LongCID
-                    const longCID = lines
-                      .find((line) => line.includes('+QENG: "LTE"'))
-                      .split(",")[4]
-                      .replace(/"/g, "");
-
-                    // Get the eNBID. Its just Cell ID minus the last 2 characters
-                    this.eNBID = longCID.substring(0, longCID.length - 2);
-
-                    // Get the short Cell ID (Last 2 characters of the Cell ID)
-                    const shortCID = longCID.substring(longCID.length - 2);
-
-                    // cellID
-                    this.cellID =
-                      "Short " +
-                      shortCID +
-                      "(" +
-                      parseInt(shortCID, 16) +
-                      ")" +
-                      ", " +
-                      "Long " +
-                      longCID +
-                      "(" +
-                      parseInt(longCID, 16) +
-                      ")";
-
-                    // TAC
-                    this.tac = lines
-                      .find((line) => line.includes('+QENG: "LTE"'))
-                      .split(",")[10]
-                      .replace(/"/g, "");
-
-                    // CSQ
-                    this.csq = lines
-                      .find((line) => line.includes("+CSQ:"))
-                      .split(" ")[1]
-                      .replace("+CSQ: ", "")
-                      .replace(/"/g, "");
-
-                    // RSRP LTE
-                    this.rsrpLTE = lines
-                      .find((line) => line.includes('+QENG: "LTE"'))
-                      .split(",")[11]
-                      .replace(/"/g, "");
-
-                    // RSRQ LTE
-                    this.rsrqLTE = lines
-                      .find((line) => line.includes('+QENG: "LTE"'))
-                      .split(",")[12]
-                      .replace(/"/g, "");
-
-                    // // RSSI LTE
-                    // this.rssi = lines
-                    //   .find((line) => line.includes('+QENG: "LTE"'))
-                    //   .split(",")[13]
-                    //   .replace(/"/g, "");
-
-                    // SINR LTE
-                    this.sinrLTE = lines
-                      .find((line) => line.includes('+QENG: "LTE"'))
-                      .split(",")[14]
-                      .replace(/"/g, "");
-
-                    // Calculate the RSRP LTE Percentage
-                    this.rsrpLTEPercentage = this.calculateRSRPPercentage(
-                      parseInt(this.rsrpLTE)
-                    );
-
-                    // Calculate the RSRQ LTE Percentage
-                    this.rsrqLTEPercentage = this.calculateRSRQPercentage(
-                      parseInt(this.rsrqLTE)
-                    );
-
-                    // Calculate the SINR LTE Percentage
-                    this.sinrLTEPercentage = this.calculateSINRPercentage(
-                      parseInt(this.sinrLTE)
-                    );
-
-                    // Calculate the Signal Percentage
-                    const lte_signal_percentage =
-                      this.calculateSignalPercentage(
-                        this.rsrpLTEPercentage,
-                        this.sinrLTEPercentage
-                      );
-
-                    // find the value from line "+QENG: \"NR5G-NSA\" for NR5G
-                    // RSRP NR
-                    this.rsrpNR = lines
-                      .find((line) => line.includes('+QENG: "NR5G-NSA"'))
-                      .split(",")[4]
-                      .replace(/"/g, "");
-
-                    // SINR NR
-                    this.sinrNR = lines
-                      .find((line) => line.includes('+QENG: "NR5G-NSA"'))
-                      .split(",")[5]
-                      .replace(/"/g, "");
-
-                    // RSRQ NR
-                    this.rsrqNR = lines
-                      .find((line) => line.includes('+QENG: "NR5G-NSA"'))
-                      .split(",")[6]
-                      .replace(/"/g, "");
-
-                    // Calculate the RSRP NR Percentage
-                    this.rsrpNRPercentage = this.calculateRSRPPercentage(
-                      parseInt(this.rsrpNR)
-                    );
-
-                    // Calculate the RSRQ NR Percentage
-                    this.rsrqNRPercentage = this.calculateRSRQPercentage(
-                      parseInt(this.rsrqNR)
-                    );
-
-                    // Calculate the SINR NR Percentage
-                    this.sinrNRPercentage = this.calculateSINRPercentage(
-                      parseInt(this.sinrNR)
-                    );
-
-                    // Calculate the Signal Percentage
-                    const nr_signal_percentage = this.calculateSignalPercentage(
-                      this.rsrpNRPercentage,
-                      this.sinrNRPercentage
-                    );
-
-                    // Average the LTE and NR Signal Percentages
-                    this.signalPercentage =
-                      (lte_signal_percentage + nr_signal_percentage) / 2;
-
-                    // Calculate the Signal Assessment
-                    this.signalAssessment = this.signalQuality(
-                      this.signalPercentage
-                    );
-                  } else {
-                    this.signalAssessment = "No Signal";
-                  }
+          cfgList: [],
+          selectedCfg: null,
+          intervalId: null,
+          init() {
+            this.updateCfgList();
+          },
+          updateCfgList() {
+            fetch('/cgi-bin/luci/admin/modem/qmodem/get_modem_cfg')
+              .then(response => response.json())
+              .then(data => {
+                this.cfgList = data.cfgs.map(cfg => ({ value: cfg.cfg, name: cfg.name }));
+                if (this.cfgList.length > 0 && !this.selectedCfg) {
+                  this.selectedCfg = this.cfgList[0].value;
                 }
-              });
-            });
+                this.fetchAllInfo();
+                this.intervalId = setInterval(() => {
+                  this.fetchAllInfo();
+                }, this.refreshRate * 1000);
+              })
+              .catch(error => console.error('Error fetching cfg list:', error));
+          },
+          changeCfg() {
+            this.fetchAllInfo();
+            clearInterval(this.intervalId);
+            this.intervalId = setInterval(() => {
+              this.fetchAllInfo();
+            }, this.refreshRate * 1000);
+          },
+          fetchAllInfo() {
+            if (!this.selectedCfg) return;
+            fetch('/cgi-bin/luci/admin/modem/qmodem/modem_ctrl?' + new URLSearchParams({
+              cfg: this.selectedCfg,
+              action: 'info',
+              translate: '1'
+            }))
+              .then(response => response.json())
+              .then(data => {
+                this.parseData(data);
+                this.lastUpdate = new Date().toLocaleString();
+              })
+              .catch(error => console.error('Error fetching modem info:', error));
           },
 
           bytesToSize(bytes) {
@@ -1500,11 +725,18 @@
           },
 
           requestPing() {
-            return fetch("/cgi-bin/get_ping")
-              .then((response) => response.text())
-              .then((data) => {
-                return data;
-              })
+            fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
+              cfg: this.selectedCfg,
+              action: 'get_ping',
+              translate: '1'
+            }))
+              .then((response) => response.json())
+                .then((data) => {
+                if (data && data.result) {
+                  return data.result;
+                }
+                return "Error";
+                })
               .catch((error) => {
                 console.error("Error:", error);
                 // Throw the error again to ensure it's propagated
@@ -1635,20 +867,24 @@
             // Content-Type: text/plain
             //
             // 1 hour 44, minute
-            fetch("/cgi-bin/get_uptime")
-              .then((response) => response.text())
+            fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
+              cfg: this.selectedCfg,
+              action: 'get_uptime',
+              translate: '1'
+            }))
+              .then((response) => response.json())
               .then((data) => {
                 // Example result
                 // 01:17:02 up 3 days,  2:41,  load average: 0.65, 0.66, 0.60
 
                 // Look for xx days in the result
-                const days = data.match(/(\d+) day/);
+                const days = data.result.match(/(\d+) day/);
                 // Do the same for hours
-                const hours = data.match(/(\d+) hour/);
+                const hours = data.result.match(/(\d+) hour/);
                 // Do the same for minutes
-                const minutes = data.match(/(\d+) min/);
+                const minutes = data.result.match(/(\d+) min/);
                 // 2:41
-                const hoursAndMinutes = data.match(/(\d+):(\d+),/);
+                const hoursAndMinutes = data.result.match(/(\d+):(\d+),/);
 
                 if (hoursAndMinutes != null) {
                   if (days != null) {
@@ -1783,83 +1019,86 @@
                 }
               });
           },
-
-          updateRefreshRate() {
-            // Check if the refresh rate is less than 3
-            if (this.newRefreshRate < 3) {
-              this.newRefreshRate = 3;
+          parseData(data) {
+            // Reset or set defaults if needed
+            for (let entry of data) {
+              if (entry.key === 'temperature') {
+                this.temperature = entry.value.replace('°C', '');
+              } else if (entry.key === 'SIM Status') {
+                this.simStatus = entry.value === 'ready' ? '已激活' : '无SIM卡';
+              } else if (entry.key === 'SIM Slot') {
+                this.activeSim = 'SIM ' + entry.value;
+              } else if (entry.key === 'MMC') {
+                this.mccmnc = entry.value;
+              } else if (entry.key === 'MNC') {
+                this.mccmnc += entry.value;
+                
+                const mccmncMap = {
+                        "46000":"中国移动",
+                         "46001":"中国联通",  "46003":"中国电信",  "46009":"中国联通",
+                           "46011":"中国电信", "46015":"中国广电", "46020":"中国铁通"};
+                const mccmncNumber = Number(this.mccmnc);
+                this.networkProvider = mccmncMap[mccmncNumber] || "未知运营商";
+              } else if (entry.key === 'network_mode') {
+                this.networkMode = entry.value;
+              } else if (entry.key === 'Band') {
+                this.bands = entry.value;
+              } else if (entry.key === 'DL Bandwidth') {
+                this.bandwidth = entry.value;
+              } else if (entry.key === 'UL Bandwidth') {
+                this.bandwidth += ' / ' + entry.value;
+              } else if (entry.key === 'ARFCN') {
+                this.earfcns = entry.value;
+              } else if (entry.key === 'Physical Cell ID') {
+                this.pccPCI = entry.value;
+              } else if (entry.key === 'Cell ID') {
+                this.cellID = entry.value;
+              } else if (entry.key === 'TAC') {
+                this.tac = entry.value;
+              } else if (entry.key === 'RSRP') {
+                this.rsrpNR = entry.value;
+                this.rsrpNRPercentage = this.calculateRSRPPercentage(
+                  parseInt(this.rsrpNR)
+                );
+              } else if (entry.key === 'RSRQ') {
+                this.rsrqNR = entry.value;
+                this.rsrqNRPercentage = this.calculateRSRQPercentage(
+                  parseInt(this.rsrqNR)
+                );
+              } else if (entry.key === 'SINR') {
+                this.sinrNR = entry.value;
+                this.sinrNRPercentage = this.calculateSINRPercentage(
+                  parseInt(this.sinrNR)
+                );
+              }
             }
-
-            // Clear the old interval
-            clearInterval(this.intervalId);
-
-            // Set the refresh rate
-            this.refreshRate = this.newRefreshRate;
-            console.log("Refresh Rate Updated to " + this.refreshRate);
-
-            // Store the refresh rate in local storage or session storage
-            localStorage.setItem("refreshRate", this.refreshRate);
-
-            // Initialize with the new refresh rate
-            this.init();
+            // Set signalAssessment based on signalPercentage
+            this.signalPercentage = this.calculateSignalPercentage(parseInt(this.rsrpNRPercentage), parseInt(this.sinrNRPercentage));
+            let perc = parseInt(this.signalPercentage);
+            if (perc >= 80) {
+              this.signalAssessment = '优秀';
+            } else if (perc >= 60) {
+              this.signalAssessment = '良好';
+            } else if (perc >= 40) {
+              this.signalAssessment = '一般';
+            } else {
+              this.signalAssessment = '差';
+            }
           },
-
-          init() {
-            // Fetch uptime
-            this.fetchUpTime();
-
-            // Retrieve the refresh rate from local storage or session storage
-            const storedRefreshRate = localStorage.getItem("refreshRate");
-
-            // If a refresh rate is stored, use it; otherwise, use a default value
-            this.refreshRate = storedRefreshRate
-              ? parseInt(storedRefreshRate)
-              : 3; // Change 3 to your desired default value
-
-            this.fetchAllInfo();
-
-            this.requestPing()
-              .then((data) => {
-                const response = data.trim();
-                // Trim any leading/trailing spaces
-                if (response === "OK") {
-                  this.internetConnectionStatus = "已连接";
-                } else {
-                  this.internetConnectionStatus = "已断开";
-                }
-              })
-              .catch((error) => {
-                console.error("Error:", error);
-                this.internetConnectionStatus = "已断开";
-              });
-
-            this.lastUpdate = new Date().toLocaleString();
-            console.log("Initialized");
-
-            // Set the refresh rate for interval
-            this.intervalId = setInterval(() => {
-              this.fetchUpTime();
-
-              this.fetchAllInfo();
-
-              this.requestPing()
-                .then((data) => {
-                  const response = data.trim();
-                  // Trim any leading/trailing spaces
-                  if (response === "OK") {
-                    this.internetConnection = "已连接";
-                  } else {
-                    this.internetConnection = "已断开";
-                  }
-                })
-                .catch((error) => {
-                  console.error("Error:", error);
-                  this.internetConnection = "已断开";
-                });
-
-              this.lastUpdate = new Date().toLocaleString();
-              console.log("Refreshed");
-            }, this.refreshRate * 1000);
+          calculatePercentage(value, min, max) {
+            if (isNaN(value) || isNaN(min) || isNaN(max)) return 0;
+            let percentage = ((value - min) / (max - min)) * 100;
+            return Math.max(0, Math.min(100, Math.round(percentage)));
+          },
+          updateRefreshRate() {
+            if (this.newRefreshRate >= 3 && this.newRefreshRate <= 60) {
+              this.refreshRate = this.newRefreshRate;
+              this.newRefreshRate = null;
+              clearInterval(this.intervalId);
+              this.intervalId = setInterval(() => {
+                this.fetchAllInfo();
+              }, this.refreshRate * 1000);
+            }
           },
         };
       }

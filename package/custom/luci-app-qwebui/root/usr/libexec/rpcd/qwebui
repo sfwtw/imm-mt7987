@@ -1,0 +1,28 @@
+#!/bin/sh
+. /lib/functions.sh
+
+get_ping()
+{
+    /usr/share/qwebui/qwebui_ctrl.sh get_ping $1
+}
+
+get_uptime()
+{
+    /usr/share/qwebui/qwebui_ctrl.sh get_uptime $1
+}
+
+case "$1" in
+	list)
+		echo '{ "info": {  }, "base_info": { }, "failme": {} }'
+	;;
+	call)
+		case "$2" in
+            "get_uptime")
+                get_uptime
+            ;;
+            "get_ping")
+                get_ping
+            ;;
+		esac
+	;;
+esac
