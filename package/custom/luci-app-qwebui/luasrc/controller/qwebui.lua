@@ -2,15 +2,13 @@
 -- Copyright 2024 FJR <fjrcn@outlook.com>
 module("luci.controller.qwebui", package.seeall)
 local http = require "luci.http"
-local fs = require "nixio.fs"
 local json = require("luci.jsonc")
-uci = luci.model.uci.cursor()
-local script_path="/usr/share/qwebui/"
-local run_path="/tmp/run/qwebui/"
+local util = require "luci.util"
 local qwebui_ctrl = "/usr/share/qwebui/qwebui_ctrl.sh"
 
 function index()
 	entry({"admin", "modem", "qwebui", "qwebui_ctrl"}, call("qwebuiCtrl")).leaf = true
+	entry({"admin", "modem", "qwebui"}, call("redirect_to_qwebui")).dependent = true
 end
 
 function shell(command)
@@ -24,12 +22,21 @@ function qwebuiCtrl()
 	local action = http.formvalue("action")
 	local cfg_id = http.formvalue("cfg")
 	local params = http.formvalue("params")
-	local translate = http.formvalue("translate")
+	local result
+	local command
 	if params then
-		result = shell(qwebui_ctrl..action.." "..cfg_id.." ".."\""..params.."\"")
-	else 
-		result = shell(qwebui_ctrl..action.." "..cfg_id)
+		command = qwebui_ctrl .. " " .. action .. " " .. cfg_id .. " " .. params
+	else
+		command = qwebui_ctrl .. " " .. action .. " " .. cfg_id
+	end
+	result = shell(command)
+	if not result or result == "" then
+		result = json.stringify({error = "Command failed"})
 	end
 	luci.http.prepare_content("application/json")
 	luci.http.write(result)
+end
+
+function redirect_to_qwebui()
+	luci.http.redirect("/qwebui")
 end

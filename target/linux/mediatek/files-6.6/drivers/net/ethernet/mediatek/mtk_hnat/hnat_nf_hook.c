@@ -342,7 +342,7 @@ static void gmac_ppe_fwd_enable(struct net_device *dev)
 void ppd_dev_setting(void)
 {
     struct net_device *br_dev;
-    rcu_read_lock_bh();  // 添加 RCU 读锁
+    rcu_read_lock_bh();
     br_dev = __dev_get_by_name(&init_net, "br-lan");
     if (br_dev) {
         struct net_device *dev;
@@ -356,11 +356,11 @@ void ppd_dev_setting(void)
             }
         }
     }
-    if (hnat_priv->g_ppdev)  // 添加 NULL 检查
+    if (hnat_priv->g_ppdev)
         printk("\nrx now ppd dev is %s\n", hnat_priv->g_ppdev->name);
-    if (ppd_dev)  // 添加 NULL 检查
+    if (ppd_dev)
         printk("\ntx now ppd dev is %s\n", ppd_dev->name);
-    rcu_read_unlock_bh();  // 添加 RCU 读解锁
+    rcu_read_unlock_bh();
 }
 
 int nf_hnat_netdevice_event(struct notifier_block *unused, unsigned long event,
@@ -372,7 +372,7 @@ int nf_hnat_netdevice_event(struct notifier_block *unused, unsigned long event,
 
 	switch (event) {
 	case NETDEV_UP:
-		ppd_dev_setting();		
+		ppd_dev_setting();
 		if (!hnat_priv->guest_en) {
 			if (!strcmp(dev->name, "ra1") || !strcmp(dev->name, "rax1"))
 				break;
@@ -386,7 +386,6 @@ int nf_hnat_netdevice_event(struct notifier_block *unused, unsigned long event,
 
 	case NETDEV_CHANGE:
 		/* Clear PPE entries if the slave of bond device physical link down */
-		ppd_dev_setting();
 		if (!netif_is_bond_slave(dev) ||
 		    (!IS_LAN_GRP(dev) && !IS_WAN(dev)))
 			break;
@@ -396,7 +395,6 @@ int nf_hnat_netdevice_event(struct notifier_block *unused, unsigned long event,
 		break;
 		
 	case NETDEV_GOING_DOWN:
-		ppd_dev_setting();
 		if (!get_wifi_hook_if_index_from_dev(dev))
 			extif_put_dev(dev);
 
@@ -409,7 +407,6 @@ int nf_hnat_netdevice_event(struct notifier_block *unused, unsigned long event,
 
 		break;
 	case NETDEV_UNREGISTER:
-		ppd_dev_setting();
 		if (hnat_priv->g_ppdev == dev) {
 			hnat_priv->g_ppdev = NULL;
 			dev_put(dev);
@@ -421,7 +418,6 @@ int nf_hnat_netdevice_event(struct notifier_block *unused, unsigned long event,
 
 		break;
 	case NETDEV_REGISTER:
-		ppd_dev_setting();
 		if (IS_PPD(dev) && !hnat_priv->g_ppdev)
 			hnat_priv->g_ppdev = dev_get_by_name(&init_net, hnat_priv->ppd);
 		if (IS_WAN(dev) && !hnat_priv->g_wandev)
@@ -429,7 +425,6 @@ int nf_hnat_netdevice_event(struct notifier_block *unused, unsigned long event,
 
 		break;
 	case MTK_FE_RESET_NAT_DONE:
-		ppd_dev_setting();
 		pr_info("[%s] HNAT driver starts to do warm init !\n", __func__);
 		hnat_warm_init();
 		break;

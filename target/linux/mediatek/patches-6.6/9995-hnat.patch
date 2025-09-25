@@ -1,3 +1,35 @@
+--- a/drivers/net/phy/mediatek/mtk-2p5ge.c	2025-08-14 01:19:46.613002351 +0800
++++ b/drivers/net/phy/mediatek/mtk-2p5ge.c	2025-08-14 12:18:24.302000076 +0800
+@@ -65,7 +65,7 @@
+ #define CM_CTRL_P23			0x5124
+ #define DM_CTRL_P01			0x5200
+ #define DM_CTRL_P23			0x5224
+-
++#define MTK_PHY_LP_DETECTED_MASK        GENMASK(7, 6)
+ #define MTK_2P5GPHY_CHIP_SCU		0x0cf800
+ #define SYS_SW_RESET			0x128
+ #define   RESET_RST_CNT			BIT(0)
+@@ -554,7 +554,19 @@
+ 	ret = genphy_update_link(phydev);
+ 	if (ret)
+ 		return ret;
+-
++	if (phydev->autoneg == AUTONEG_ENABLE && !phydev->autoneg_complete)
++		{
++		ret = phy_read_paged(phydev, MTK_PHY_PAGE_EXTENDED_1,
++                                    MTK_PHY_AUX_CTRL_AND_STATUS);
++                if (!FIELD_GET(MTK_PHY_LP_DETECTED_MASK, ret)){
++                       if (phydev->link !=1){
++                               phydev->link = 1;
++                               phydev->speed = SPEED_2500;
++                               phydev->duplex = DUPLEX_FULL;
++                       		}
++                       return 0;
++               		}
++		}
+ 	phydev->speed = SPEED_UNKNOWN;
+ 	phydev->duplex = DUPLEX_UNKNOWN;
+ 	phydev->pause = 0;
 --- a/drivers/net/phy/mediatek/mtk-ge-soc.c	2025-06-15 22:32:46.110001496 +0800
 +++ b/drivers/net/phy/mediatek/mtk-ge-soc.c	2025-06-16 21:13:04.290000141 +0800
 @@ -1208,7 +1208,7 @@

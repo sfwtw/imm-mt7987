@@ -5,11 +5,11 @@ const toggleDarkMode = () => {
 
   if (currentTheme === 'dark') {
     html.removeAttribute('data-bs-theme');
-    darkModeToggle.textContent = '暗黑主题';
+    darkModeToggle.textContent = '暗黑';
     localStorage.setItem('theme', 'light'); // Store the theme in localStorage
   } else {
     html.setAttribute('data-bs-theme', 'dark');
-    darkModeToggle.textContent = '明亮主题';
+    darkModeToggle.textContent = '明亮';
     localStorage.setItem('theme', 'dark'); // Store the theme in localStorage
   }
 };
@@ -23,14 +23,14 @@ const html = document.querySelector('html');
 if (storedTheme) {
   html.setAttribute('data-bs-theme', storedTheme);
   if (storedTheme === 'dark') {
-    darkModeToggle.textContent = '明亮主题';
+    darkModeToggle.textContent = '明亮';
   } else {
-    darkModeToggle.textContent = '暗黑主题';
+    darkModeToggle.textContent = '暗黑';
   }
 } else {
   // If no preference is stored, default to dark mode
   html.setAttribute('data-bs-theme', 'dark');
-  darkModeToggle.textContent = '明亮主题';
+  darkModeToggle.textContent = '明亮';
   localStorage.setItem('theme', 'dark');
 }
 

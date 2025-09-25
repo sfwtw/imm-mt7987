@@ -1,161 +1,278 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="zh-cn" data-bs-theme="light">
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>模块管理</title>
-  <!-- 导入自定义和Bootstrap样式 -->
+  <title>模块管理 - 短信管理</title>
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/bootstrap.min.css" />
-  <!-- 网站图标 -->
   <link rel="icon" href="favicon.ico" />
-  <!-- 导入Bootstrap和Alpine.js脚本 -->
   <script src="js/bootstrap.bundle.min.js"></script>
   <script src="js/alpinejs.min.js" defer></script>
-
-  <!-- Contributed By: snjzb -->
 </head>
 
 <body>
   <main>
     <div class="container my-4" x-data="fetchSMS()">
-      <nav class="navbar navbar-expand-lg mt-2">
+      <!-- 初始加载指示器 -->
+      <div x-show="isInitialLoading" class="initial-loading-overlay">
+        <div class="initial-loading-content">
+          <div class="loading-spinner"></div>
+          <h4>初始化短信管理</h4>
+          <p>正在加载配置和短信数据...</p>
+        </div>
+      </div>
+
+      <!-- 统一导航栏 -->
+      <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
-          <a class="navbar-brand" href="/">
-          <span class="mb-0 h4 fw-bold">模块管理</span></a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText"
-            aria-controls="navbarText" aria-expanded="false" aria-label="切换导航">
+          <a class="btn btn-outline-secondary me-3" href="/cgi-bin/luci/" title="返回OP主页">
+            <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+              <path fill="currentColor" d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 6L8 2.5 4.5 6 7 6v4h2V6h1.5z" />
+            </svg>
+            返回OP主页
+          </a>
+
+          <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText">
             <span class="navbar-toggler-icon"></span>
           </button>
+
           <div class="collapse navbar-collapse" id="navbarText">
-            <ul class="navbar-nav me-auto mb-2 ml-4 mb-lg-0">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
               <li class="nav-item">
-                <a class="nav-link" href="/">首页</a>
+                <a class="nav-link" href="index.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor"
+                      d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293l6-6Z" />
+                  </svg>
+                  首页
+                </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="/network.html">网络</a>
+                <a class="nav-link" href="at.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor"
+                      d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783z" />
+                  </svg>
+                  AT
+                </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="/scanner.html">扫描</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/settings.html">设置</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="/sms.html">短信</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/console">控制台</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/deviceinfo.html">设备信息</a>
+                <a class="nav-link active" href="sms.html" aria-current="page">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor"
+                      d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z" />
+                  </svg>
+                  短信
+                </a>
               </li>
             </ul>
-            <span class="navbar-text">
-              <button class="btn btn-link text-reset" id="darkModeToggle">
-                暗黑模式
+
+            <div class="d-flex align-items-center gap-3">
+              <button class="btn btn-link text-reset p-0" id="darkModeToggle" title="切换主题">
+                <svg width="20" height="20" viewBox="0 0 16 16">
+                  <path fill="currentColor"
+                    d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z" />
+                </svg>
               </button>
-            </span>
+
+              <select id="modemSelector" class="form-select" x-model="selectedCfg" @change="changeCfg()"
+                style="min-width: 200px;">
+                <template x-for="cfg in cfgList" :key="cfg.value">
+                  <option :value="cfg.value" x-text="cfg.name"></option>
+                </template>
+              </select>
+            </div>
           </div>
         </div>
       </nav>
-      <div class="row mt-5 mb-4">
+
+      <!-- 短信收件箱 -->
+      <div class="row mb-4">
         <div class="col">
-          <div class="card">
-            <div class="card-header">短信收件箱</div>
-            <div class="card-body">
-              <div class="card-text">
-                <div class="col">
-                  <div style="
-                        max-height: 400px;
-                        overflow-y: scroll;
-                        overflow-x: hidden;
-                      ">
-                    <div x-show="isLoading">
-                      <h4>正在获取短信...</h4>
-                    </div>
-                    <table class="table table-hover border-success" x-show="!isLoading">
-                      <tbody>
-                        <!-- 没有消息时显示 -->
-                        <!-- Display when there are no messages -->
-                        <template x-if="messages.length === 0 && !isLoading">
-                          <div>
-                            <p>收件箱为空</p>
-                          </div>
-                        </template>
-                        <!-- 循环显示短信消息 -->
-                        <!-- "Loop display SMS messages" -->
-                        <template x-for="(message, index) in messages" :key="index">
-                          <tr>
-                            <td>
-                              <div class="form-check">
-                                <input class="form-check-input" type="checkbox" :value="index"
-                                  x-model="selectedMessages" />
-                                <div class="row column-gap-1 mb-2">
-                                  <div class="col-md-3">
-                                    <p x-text="'发件人: ' + senders[index]"></p>
-                                  </div>
-                                  <div class="col">
-                                    <p x-text="'日期时间: ' + dates[index]"></p>
-                                  </div>
-                                </div>
-                                <div class="col-md-9">
-                                  <p x-text="message.text"></p>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        </template>
-                      </tbody>
-                    </table>
-                  </div>
+          <div class="card fade-in">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-inbox me-2"></i>短信收件箱</span>
+              <button class="btn btn-outline-primary btn-sm" type="button" @click="requestSMS()" :disabled="isLoading">
+                <span x-show="!isLoading"><i class="bi bi-arrow-clockwise me-1"></i>刷新</span>
+                <span x-show="isLoading">
+                  <div class="loading-spinner me-1"></div>加载中
+                </span>
+              </button>
+            </div>
+            <div class="card-body position-relative">
+              <!-- 加载状态，绝对定位覆盖短信列表，不影响尺寸 -->
+              <div x-show="isLoading && !isInitialLoading" class="loading-overlay"
+                style="position: absolute; inset: 0; z-index: 2; background: rgba(255,255,255,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="loading-spinner mb-2"></div>
+                <p class="text-muted mb-0">正在获取短信...</p>
+              </div>
+              <!-- 短信列表 -->
+              <div class="sms-container" style="min-height: 200px;">
+                <!-- 空状态 -->
+                <div x-show="messages.length === 0" class="text-center py-5">
+                  <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                  <h5 class="text-muted mt-3">收件箱为空</h5>
+                  <p class="text-muted">暂无收到的短信</p>
                 </div>
+
+                <!-- 短信项目 -->
+                <template x-for="(message, index) in messages" :key="index">
+                  <div class="sms-item p-3">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" :value="index" x-model="selectedMessages" />
+                      <div class="ms-3">
+                        <div class="row mb-2">
+                          <div class="col-md-4">
+                            <div class="sms-meta">
+                              <i class="bi bi-person me-1"></i>
+                              <span x-text="'发件人: ' + senders[index]"></span>
+                            </div>
+                          </div>
+                          <div class="col-md-8">
+                            <div class="sms-meta">
+                              <i class="bi bi-clock me-1"></i>
+                              <span x-text="'时间: ' + dates[index]"></span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="mt-2">
+                          <p class="mb-0" x-text="message.text"></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
               </div>
             </div>
-            <!-- 添加判断，只有当messages数组有内容时才显示全选复选框及其区域 -->
-            <!-- Add a judgment, only when the messages array has content will the select all checkbox and its area be displayed" -->
-            <div class="card-body border-top" x-show="messages.length > 0">
-              <div class="form-check">
-                <input id="selectAllCheckbox" class="form-check-input" type="checkbox" @change="toggleAll($event)" />
-                <label class="form-check-label">全选</label>
-              </div>
-            </div>
-            <div class="card-footer">
-              <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-                <!-- 刷新按钮 -->
-                <!-- Refresh button -->
-                <button class="btn btn-success" type="button" @click="init()">
-                  刷新
-                </button>
-                <!-- 删除选中短信按钮 -->
-                <!-- Delete selected SMS button -->
-                <button class="btn btn-danger" type="button" @click="deleteSelectedSMS()">
-                  删除选中的短信
-                </button>
+
+            <!-- 全选和操作 -->
+            <div class="card-footer" x-show="messages.length > 0">
+              <div class="d-flex align-items-center justify-content-between flex-wrap">
+                <div class="form-check">
+                  <input id="selectAllCheckbox" class="form-check-input" type="checkbox" @change="toggleAll($event)" />
+                  <label class="form-check-label" for="selectAllCheckbox">全选</label>
+                </div>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-danger btn-sm" type="button" @click="deleteSelectedSMS()"
+                    :disabled="selectedMessages.length === 0">
+                    <i class="bi bi-trash me-1"></i>删除选中 (<span x-text="selectedMessages.length"></span>)
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="row mt-5 mb-4">
+
+      <!-- 短信存储设置 -->
+      <div class="row mb-4">
         <div class="col">
-          <div class="card">
-            <div class="card-header">发送短信</div>
+          <div class="card fade-in">
+            <div class="card-header">
+              <i class="bi bi-hdd me-2"></i>短信存储设置
+            </div>
             <div class="card-body">
-              <div class="mb-3">
-                <label for="phoneNumber" class="form-label">收件人</label>
-                <input type="text" class="form-control" id="phoneNumber" x-model="phoneNumber"
-                  placeholder="输入收件人号码" />
+              <!-- 存储使用情况 -->
+              <div class="row mb-4" x-show="smsCapabilities">
+                <div class="col-md-6"
+                  x-show="smsCapabilities && smsCapabilities.SM && smsCapabilities.SM.total && parseInt(smsCapabilities.SM.total) > 0">
+                  <label class="form-label fw-semibold">SIM卡存储使用情况</label>
+                  <div class="progress-container">
+                    <div class="progress" style="height: 20px;">
+                      <div class="progress-bar bg-primary" role="progressbar"
+                        :style="`width: ${(smsCapabilities && smsCapabilities.SM) ? (parseInt(smsCapabilities.SM.used) / parseInt(smsCapabilities.SM.total)) * 100 : 0}%`"
+                        :aria-valuenow="(smsCapabilities && smsCapabilities.SM) ? smsCapabilities.SM.used : 0"
+                        :aria-valuemax="(smsCapabilities && smsCapabilities.SM) ? smsCapabilities.SM.total : 0">
+                      </div>
+                    </div>
+                    <div class="progress-value-overlay"
+                      x-text="(smsCapabilities && smsCapabilities.SM) ? `${smsCapabilities.SM.used} / ${smsCapabilities.SM.total}` : ''">
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6"
+                  x-show="smsCapabilities && smsCapabilities.ME && smsCapabilities.ME.total && parseInt(smsCapabilities.ME.total) > 0">
+                  <label class="form-label fw-semibold">设备存储使用情况</label>
+                  <div class="progress-container">
+                    <div class="progress" style="height: 20px;">
+                      <div class="progress-bar bg-info" role="progressbar"
+                        :style="`width: ${(smsCapabilities && smsCapabilities.ME) ? (parseInt(smsCapabilities.ME.used) / parseInt(smsCapabilities.ME.total)) * 100 : 0}%`"
+                        :aria-valuenow="(smsCapabilities && smsCapabilities.ME) ? smsCapabilities.ME.used : 0"
+                        :aria-valuemax="(smsCapabilities && smsCapabilities.ME) ? smsCapabilities.ME.total : 0">
+                      </div>
+                    </div>
+                    <div class="progress-value-overlay"
+                      x-text="(smsCapabilities && smsCapabilities.ME) ? `${smsCapabilities.ME.used} / ${smsCapabilities.ME.total}` : ''">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 存储选择 -->
+              <div class="row">
+                <div class="col-md-4">
+                  <label for="mem1Select" class="form-label">读取存储 (mem1)</label>
+                  <select id="mem1Select" class="form-select" x-model="smsStorage.mem1" @change="updateSmsStorage()">
+                    <option value="SM">SIM卡存储 (SM)</option>
+                    <option value="ME">设备存储 (ME)</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label for="mem2Select" class="form-label">写入存储 (mem2)</label>
+                  <select id="mem2Select" class="form-select" x-model="smsStorage.mem2" @change="updateSmsStorage()">
+                    <option value="SM">SIM卡存储 (SM)</option>
+                    <option value="ME">设备存储 (ME)</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label for="mem3Select" class="form-label">ETC存储 (mem3)</label>
+                  <select id="mem3Select" class="form-select" x-model="smsStorage.mem3" @change="updateSmsStorage()">
+                    <option value="SM">SIM卡存储 (SM)</option>
+                    <option value="ME">设备存储 (ME)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 发送短信 -->
+      <div class="row mb-4">
+        <div class="col">
+          <div class="card fade-in">
+            <div class="card-header">
+              <i class="bi bi-send me-2"></i>发送短信
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="phoneNumber" class="form-label">收件人号码</label>
+                  <input type="text" class="form-control" id="phoneNumber" x-model="phoneNumber"
+                    placeholder="输入收件人手机号码" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">字符统计</label>
+                  <div class="form-control-plaintext">
+                    <span class="badge bg-secondary" x-text="messageToSend.length + ' / 160'"></span>
+                    <small class="text-muted ms-2">剩余字符</small>
+                  </div>
+                </div>
               </div>
               <div class="mb-3">
                 <label for="messageToSend" class="form-label">短信内容</label>
-                <textarea class="form-control" id="messageToSend" rows="3" x-model="messageToSend"
-                  placeholder="输入短信内容"></textarea>
+                <textarea class="form-control" id="messageToSend" rows="4" x-model="messageToSend"
+                  placeholder="输入要发送的短信内容..." maxlength="160"></textarea>
               </div>
+
+              <!-- 通知区域 -->
               <div id="notification" class="alert" style="display: none;"></div>
-              <button class="btn btn-primary" @click="sendSMS()">
-                发送短信
+
+              <button class="btn btn-primary" @click="sendSMS()"
+                :disabled="!phoneNumber || !messageToSend || isLoading">
+                <i class="bi bi-send me-1"></i>发送短信
               </button>
             </div>
           </div>
@@ -163,11 +280,13 @@
       </div>
     </div>
   </main>
+
   <script src="js/dark-mode.js"></script>
   <script>
     function fetchSMS() {
       return {
         isLoading: false,
+        isInitialLoading: true,
         atCommandResponse: "",
         messages: [],
         senders: [],
@@ -175,9 +294,58 @@
         selectedMessages: [],
         phoneNumber: '',
         messageToSend: '',
-        messageIndices: [], // 确保初始化messageIndices数组
+        messageIndices: [],
+        cfgList: [],
+        selectedCfg: null,
+        smsStorage: {
+          mem1: 'SM',
+          mem2: 'SM',
+          mem3: 'SM'
+        },
+        smsCapabilities: null,
 
-        // 清除现有数据
+        init() {
+          console.log('初始化短信管理...');
+          this.updateCfgList();
+        },
+
+        updateCfgList() {
+          fetch('/cgi-bin/luci/admin/modem/qmodem/get_modem_cfg')
+            .then(response => {
+              if (response.status === 403) {
+                window.location.href = '/cgi-bin/luci/admin/modem/qwebui';
+                return;
+              }
+              return response.json();
+            })
+            .then(data => {
+              if (!data) return;
+              this.cfgList = data.cfgs.map(cfg => ({ value: cfg.cfg, name: cfg.name }));
+              if (this.cfgList.length > 0) {
+                if (!this.selectedCfg) {
+                  this.selectedCfg = this.cfgList[0].value;
+                }
+                this.changeCfg();
+              } else {
+                this.showNotification("未找到调制解调器配置，请检查设备连接。", "warning");
+                this.cfgList = [{ value: '', name: '无可用配置' }];
+                this.selectedCfg = '';
+              }
+            })
+            .catch(error => {
+              console.error('Error fetching cfg list:', error);
+              this.showNotification("获取调制解调器配置失败，请检查网络或设备。", "danger");
+            })
+            .finally(() => {
+              this.isInitialLoading = false;
+            });
+        },
+
+        changeCfg() {
+          this.clearData();
+          this.requestSMS();
+        },
+
         clearData() {
           this.messages = [];
           this.senders = [];
@@ -190,91 +358,128 @@
           }
         },
 
-        // 请求获取短信
+        showNotification(message, type = 'info') {
+          console.log(`[${type.toUpperCase()}] ${message}`);
+
+          // 创建右上角通知容器（如不存在则创建）
+          let container = document.getElementById('notification-container');
+          if (!container) {
+            container = document.createElement('div');
+            container.id = 'notification-container';
+            container.style.position = 'fixed';
+            container.style.top = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            container.style.maxWidth = '350px';
+            container.style.pointerEvents = 'none';
+            document.body.appendChild(container);
+          }
+
+          const notification = document.createElement('div');
+          notification.className = `alert alert-${type === 'danger' ? 'danger' : type === 'warning' ? 'warning' : 'success'} notification`;
+          notification.style.marginBottom = '10px';
+          notification.style.pointerEvents = 'auto';
+          notification.innerHTML = `
+            <div class="d-flex align-items-center">
+              <span>${message}</span>
+              <button type="button" class="btn-close ms-auto" aria-label="Close"></button>
+            </div>
+          `;
+
+          container.appendChild(notification);
+
+          notification.querySelector('.btn-close').addEventListener('click', () => {
+            notification.remove();
+          });
+
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.remove();
+            }
+          }, 5000);
+        },
+
         requestSMS() {
           this.isLoading = true;
-          fetch(`/cgi-bin/get_atcommand?${new URLSearchParams({ atcmd: "AT+CSMS=1;+CSDH=0;+CNMI=2,1,0,0,0;+CMGF=1;+CSCA?;+CSMP=17,167,0,8;+CPMS=\"ME\",\"ME\",\"ME\";+CSCS=\"UCS2\";+CMGL=\"ALL\"" })}`)
-            .then(response => response.text())
+          fetch('/cgi-bin/luci/admin/modem/qmodem/get_sms?' + new URLSearchParams({
+            cfg: this.selectedCfg
+          }))
+            .then(response => response.json())
             .then(data => {
-              this.atCommandResponse = data.split('\n')
-                .filter(line => line.trim() !== "OK" && line.trim() !== "")
-                .join('\n');
-            })
-            .finally(() => {
               this.isLoading = false;
-              this.clearData();
-              this.parseSMSData(this.atCommandResponse);
+              // 先解析新数据
+              let newMessages = [];
+              let newSenders = [];
+              let newDates = [];
+              let newMessageIndices = [];
+              const grouped = {};
+              data.msg.forEach(item => {
+                if (!grouped[item.reference]) grouped[item.reference] = [];
+                grouped[item.reference].push(item);
+              });
+              Object.values(grouped).forEach(group => {
+                group.sort((a, b) => a.part - b.part);
+                const text = group.map(p => p.content).join('');
+                const sender = group[0].sender;
+                const date = new Date(group[0].timestamp * 1000);
+                const indices = group.map(p => p.index);
+                newMessages.push({ text, sender, date, indices });
+                newSenders.push(sender);
+                newDates.push(this.formatDate(date));
+                newMessageIndices.push(indices);
+              });
+              // 判断是否有变化
+              const isChanged = JSON.stringify(newMessages) !== JSON.stringify(this.messages);
+              if (isChanged) {
+                this.clearData();
+                this.messages = newMessages;
+                this.senders = newSenders;
+                this.dates = newDates;
+                this.messageIndices = newMessageIndices;
+              }
+              this.smsCapabilities = data.sms_capabilities;
+              this.smsStorage.mem1 = data.sms_capabilities.mem1 || 'ME';
+              this.smsStorage.mem2 = data.sms_capabilities.mem2 || 'ME';
+              this.smsStorage.mem3 = data.sms_capabilities.mem3 || 'ME';
+            })
+            .catch(error => {
+              console.error('Error fetching SMS:', error);
+              this.isLoading = false;
             });
         },
 
         // 解析短信数据的方法
         parseSMSData(data) {
-          const cmglRegex = /^\s*\+CMGL:\s*(\d+),"[^"]*","([^"]*)"[^"]*,"([^"]*)"/gm;
-          const cscaRegex = /^\s*\+CSCA:\s*"([^"]*)"/gm;
-          this.messageIndices = [];
-          this.serviceCenters = [];
-          this.dates = [];
-          this.senders = [];
           this.messages = [];
-          let match;
-          let lastIndex = null;
-          while ((match = cmglRegex.exec(data)) !== null) {
-            const index = parseInt(match[1]);
-            const senderHex = match[2];
-            const sender = senderHex.startsWith("003") ? this.convertHexToText(senderHex) : senderHex;
-            const dateStr = match[3].replace(/\+\d{2}$/, "");
-            const date = this.parseCustomDate(dateStr);
-            if (isNaN(date)) {
-              console.error(`Invalid Date: ${dateStr}`);
-              continue;
-            }
-            const startIndex = cmglRegex.lastIndex;
-            const endIndex = data.indexOf("+CMGL:", startIndex) !== -1 ? data.indexOf("+CMGL:", startIndex) : data.length;
-            const messageHex = data.substring(startIndex, endIndex).trim();
-            const message = /^[0-9a-fA-F]+$/.test(messageHex) ? this.convertHexToText(messageHex) : messageHex;
-            if (lastIndex !== null && this.messages[lastIndex].sender === sender && (date - this.messages[lastIndex].date) / 1000 <= 1) {
-              this.messages[lastIndex].text += " " + message;
-              this.messages[lastIndex].indices.push(index);
-              this.dates[lastIndex] = this.formatDate(date);
-            } else {
-              this.messageIndices.push([index]);
-              this.senders.push(sender);
-              this.dates.push(this.formatDate(date));
-              this.messages.push({ text: message, sender: sender, date: date, indices: [index] });
-              lastIndex = this.messages.length - 1;
-            }
-          }
-          while ((match = cscaRegex.exec(data)) !== null) {
-            const serviceCenterHex = match[1];
-            const serviceCenter = this.convertHexToText(serviceCenterHex);
-            this.serviceCenters.push(serviceCenter);
-          }
-        },
-
-        // 将十六进制转换为文本（假设使用 UTF-16BE 编码）
-        convertHexToText(hex) {
-          const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-          return new TextDecoder('utf-16be').decode(bytes);
-        },
-
-        // 自定义解析日期函数
-        parseCustomDate(dateStr) {
-          const [datePart, timePart] = dateStr.split(',');
-          const [day, month, year] = datePart.split('/').map(part => parseInt(part, 10));
-          const [hour, minute, second] = timePart.split(':').map(part => parseInt(part, 10));
-
-          // 将日期转换为标准格式的日期对象
-          return new Date(Date.UTC(2000 + year, month - 1, day, hour, minute, second));
+          this.senders = [];
+          this.dates = [];
+          this.messageIndices = [];
+          const grouped = {};
+          data.forEach(item => {
+            if (!grouped[item.reference]) grouped[item.reference] = [];
+            grouped[item.reference].push(item);
+          });
+          Object.values(grouped).forEach(group => {
+            group.sort((a, b) => a.part - b.part);
+            const text = group.map(p => p.content).join('');
+            const sender = group[0].sender;
+            const date = new Date(group[0].timestamp * 1000);
+            const indices = group.map(p => p.index);
+            this.messages.push({ text, sender, date, indices });
+            this.senders.push(sender);
+            this.dates.push(this.formatDate(date));
+            this.messageIndices.push(indices);
+          });
         },
 
         // 自定义格式化日期函数
         formatDate(date) {
-          const year = date.getUTCFullYear() - 2000;
-          const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-          const day = date.getUTCDate().toString().padStart(2, '0');
-          const hour = date.getUTCHours().toString().padStart(2, '0');
-          const minute = date.getUTCMinutes().toString().padStart(2, '0');
-          const second = date.getUTCSeconds().toString().padStart(2, '0');
+          const year = date.getFullYear() - 2000;
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const day = date.getDate().toString().padStart(2, '0');
+          const hour = date.getHours().toString().padStart(2, '0');
+          const minute = date.getMinutes().toString().padStart(2, '0');
+          const second = date.getSeconds().toString().padStart(2, '0');
           return `${day}/${month}/${year},${hour}:${minute}:${second}`;
         },
 
@@ -306,22 +511,59 @@
               return;
             }
 
-            // 拼接 AT 命令
-            const atCommands = indicesToDelete.map((index, i) => i === 0 ? `AT+CMGD=${index}` : `+CMGD=${index}`).join(';');
-            fetch(`/cgi-bin/get_atcommand?${new URLSearchParams({ atcmd: atCommands })}`)
+            const params = new URLSearchParams({
+              cfg: this.selectedCfg,
+              index: indicesToDelete.sort((a, b) => b - a).join(' ')
+            });
+            fetch(`/cgi-bin/luci/admin/modem/qmodem/delete_sms?${params.toString()}`)
+              .then(response => response.json())
+              .then(data => {
+                if (data.result && data.result.status === "1") {
+                  this.showNotification("选中的短信删除成功！", "success");
+                } else {
+                  this.showNotification("删除选中短信失败！", "danger");
+                }
+              })
+              .catch(error => {
+                console.error("Error deleting SMS:", error);
+                this.showNotification("删除选中短信失败！", "danger");
+              })
               .finally(() => {
                 this.selectedMessages = [];
                 this.requestSMS();
               });
           }
         },
+
         // 删除所有短信
         deleteAllSMS() {
-          fetch(`/cgi-bin/get_atcommand?${new URLSearchParams({ atcmd: "AT+CMGD=,4" })}`)
+          const allIndices = this.messageIndices.flat();
+          if (allIndices.length === 0) {
+            console.warn("没有短信可删除");
+            return;
+          }
+          const params = new URLSearchParams({
+            cfg: this.selectedCfg,
+            index: allIndices.sort((a, b) => b - a).join(' ')
+          });
+          fetch(`/cgi-bin/luci/admin/modem/qmodem/delete_sms?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+              if (data.result && data.result.status === "1") {
+                this.showNotification("所有短信删除成功！", "success");
+              } else {
+                this.showNotification("删除所有短信失败！", "danger");
+              }
+            })
+            .catch(error => {
+              console.error("Error deleting all SMS:", error);
+              this.showNotification("删除所有短信失败！", "danger");
+            })
             .finally(() => {
               this.init();
             });
         },
+
         // 发送短信
         encodeUCS2(input) {
           let output = '';
@@ -332,84 +574,85 @@
           return output;
         },
 
+        generatePDU(phone, message) {
+          let phoneDigits = phone.replace(/^\+/, '').replace(/\D/g, '');
+          if (phoneDigits.length % 2 !== 0) {
+            phoneDigits = '0' + phoneDigits;
+          }
+          const daLen = phoneDigits.length.toString(16).padStart(2, '0').toUpperCase();
+          const daType = '81'; // national
+          let bcd = '';
+          for (let i = 0; i < phoneDigits.length; i += 2) {
+            const d1 = phoneDigits[i];
+            const d2 = phoneDigits[i + 1];
+            bcd += d2 + d1;
+          }
+          const da = daLen + daType + bcd.toUpperCase();
+          const pid = '00';
+          const dcs = '08'; // UCS2
+          const ud = this.encodeUCS2(message);
+          const udl = (ud.length / 2).toString(16).padStart(2, '0').toUpperCase();
+          const type = '21'; // SMS-SUBMIT with VP
+          const mr = '00';
+          const sca = '00';
+          const pdu = sca + type + mr + da + pid + dcs + udl + ud;
+          return pdu;
+        },
+
         async sendSMS() {
-          let phoneNumberWithCountryCode;
-          if (this.phoneNumber.length < 11) {
-            phoneNumberWithCountryCode = this.phoneNumber;
-          } else {
-            const serviceCenterPrefix = this.serviceCenters[0].substring(0, 3);
-            phoneNumberWithCountryCode = `${serviceCenterPrefix}${this.phoneNumber}`;
-          }
-          const encodedPhoneNumber = this.encodeUCS2(phoneNumberWithCountryCode);
-          const messageSegments = this.splitMessage(this.messageToSend, 70); // 将消息分段
-          const uid = Math.floor(Math.random() * 256); // 生成随机的UID
-          const totalSegments = messageSegments.length;
-          let allSegmentsSent = true;
-          let errorCode = null;
-          for (let i = 0; i < totalSegments; i++) {
-            const segment = messageSegments[i];
-            const encodedMessage = this.encodeUCS2(segment);
-            const currentSegment = i + 1;
-            const Command = `${uid},${currentSegment},${totalSegments}`;
-            const params = new URLSearchParams({
-              number: encodedPhoneNumber,
-              msg: encodedMessage,
-              Command: Command
-            });
-            try {
-              const response = await fetch(`/cgi-bin/send_sms?${params.toString()}`);
-              const data = await response.text();
-              console.log("Response from server:", data);
-
-              // 检查返回的数据中是否包含 '+CMS ERROR'
-              if (data.includes('+CMS ERROR')) {
-                errorCode = data.match(/\+CMS ERROR: (\d+)/)?.[1];
-                console.error("SMS send error:", data);
-                allSegmentsSent = false;
-                break; // 停止发送剩余的段
-              }
-            } catch (error) {
-              console.error("Fetch error:", error);
-              allSegmentsSent = false;
-              break; // 停止发送剩余的段
+          const pdu = this.generatePDU(this.phoneNumber, this.messageToSend);
+          const params = new URLSearchParams({
+            cfg: this.selectedCfg,
+            pdu: pdu
+          });
+          try {
+            const response = await fetch(`/cgi-bin/luci/admin/modem/qmodem/send_sms?${params.toString()}`);
+            const data = await response.json();
+            if (data.result && data.result.status === "1") {
+              this.showNotification("短信发送成功！", "success");
+            } else {
+              this.showNotification("短信发送失败！", "danger");
             }
+          } catch (error) {
+            console.error("Fetch error:", error);
+            this.showNotification("短信发送失败！", "danger");
           }
-          if (allSegmentsSent) {
-            this.showNotification("SMS sent successfully!");
-          } else {
-            this.showNotification(`SMS sending failed!: ${errorCode}`);
-          }
-        },
-
-        splitMessage(message, length) {
-          const segments = [];
-          for (let i = 0; i < message.length; i += length) {
-            segments.push(message.substring(i, i + length));
-          }
-          return segments;
-        },
-
-        showNotification(message, type) {
-          const notification = document.getElementById('notification');
-          notification.innerText = message;
-          notification.className = `alert alert-${type}`;
-          notification.style.display = 'block';
-          setTimeout(() => {
-            notification.style.display = 'none';
-          }, 3000); // 3秒后自动关闭
-        },
-
-        // 初始化
-        //   Initialize
-        init() {
-          this.clearData();
-          this.requestSMS();
         },
 
         // 全选/取消全选
-        //   Select all/deselect all
         toggleAll(event) {
           this.selectedMessages = event.target.checked ? this.messages.map((_, index) => index) : [];
+        },
+
+        updateSmsStorage() {
+          // Create a proper JSON object first
+          const storageObj = {
+            mem1: this.smsStorage.mem1,
+            mem2: this.smsStorage.mem2,
+            mem3: this.smsStorage.mem3
+          };
+
+          // Convert to JSON string with escaped quotes
+          const jsonString = JSON.stringify(storageObj).replace(/"/g, '\\"');
+
+          fetch('/cgi-bin/luci/admin/modem/qmodem/modem_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'set_sms_storage',
+            params: `"${jsonString}"`
+          }))
+            .then(response => response.json())
+            .then(data => {
+              if (data.result) {
+                this.showNotification("短信存储设置更新成功！", "success");
+                this.requestSMS();
+              } else {
+                this.showNotification("短信存储设置更新失败！", "danger");
+              }
+            })
+            .catch(error => {
+              console.error("Error updating SMS storage settings:", error);
+              this.showNotification("短信存储设置更新失败！", "danger");
+            });
         }
       };
     }

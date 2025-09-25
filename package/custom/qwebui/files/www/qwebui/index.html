@@ -1,1112 +1,790 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>模块管理</title>
-    <!-- <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-      crossorigin="anonymous"
-    /> -->
-    <!-- Import all the bootstrap css files from css folder -->
-    <link rel="stylesheet" href="css/styles.css" />
-    <link rel="stylesheet" href="css/bootstrap.min.css" />
+<html lang="zh-cn" data-bs-theme="light">
 
-    <!-- Logo -->
-    <link rel="simpleadmin-logo" href="favicon.ico" />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>模块管理</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/bootstrap.min.css" />
+  <link rel="simpleadmin-logo" href="favicon.ico" />
+  <script src="js/bootstrap.bundle.min.js"></script>
+  <script src="js/alpinejs.min.js" defer></script>
+</head>
 
-    <!--  Import BootStrap Javascript -->
-    <script src="js/bootstrap.bundle.min.js"></script>
-    <script src="js/alpinejs.min.js" defer></script>
-  </head>
-  <body>
-    <main>
-      <div class="container my-4" x-data="processAllInfos()">
-        <nav class="navbar navbar-expand-lg mt-2">
-          <div class="container-fluid">
-            <a class="navbar-brand" href="/"
-              ><span class="mb-0 h4 fw-bold">模块管理</span></a>
-            <button
-              class="navbar-toggler"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#navbarText"
-              aria-controls="navbarText"
-              aria-expanded="false"
-              aria-label="Toggle navigation"
-            >
-              <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarText">
-              <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                 <li class="nav-item">
-                 <a class="nav-link active" aria-current="page" href="/">首页</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="network.html">网络</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="/scanner.html">扫描</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="/settings.html">设置</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="/sms.html">短信</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="/console">控制台</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="/deviceinfo.html"
-                    >设备信息</a
-                  >
-                </li>
-              </ul>
-              <span class="navbar-text">
-                <select id="modemSelector" class="form-select me-2" x-model="selectedCfg" @change="changeCfg()">
-                  <template x-for="cfg in cfgList" :key="cfg.value">
-                    <option :value="cfg.value" x-text="cfg.name"></option>
-                  </template>
-                </select>
-                <button class="btn btn-link text-reset" id="darkModeToggle">
-                  Dark Mode
-                </button>
-              </span>
+<body>
+  <main x-data="processAllInfos()">
+    <!-- 初始加载指示器 - 只在第一次初始化时显示 -->
+    <div x-show="isInitialLoading" class="initial-loading-overlay">
+      <div class="initial-loading-content">
+        <div class="loading-spinner"></div>
+        <h4>初始化系统</h4>
+        <p>正在加载模块配置...</p>
+      </div>
+    </div>
+
+    <div class="container my-4">
+      <!-- 导航栏优化 -->
+      <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+          <a class="btn btn-outline-secondary me-3 back-btn-icon" href="/cgi-bin/luci/">
+            <svg width="20" height="20" viewBox="0 0 16 16">
+              <path fill="currentColor" d="M15 8a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 0 1-.708.708l-4-4a.498.498 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 7.5H14.5A.5.5 0 0 1 15 8"/>
+            </svg>
+          </a>
+
+          <span class="navbar-brand d-lg-none fw-bold mb-0">QWebui</span>
+
+          <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="navbarText">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              <li class="nav-item">
+                <a class="nav-link active fw-semibold" href="index.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor"
+                      d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293l6-6Z" />
+                  </svg>
+                  首页
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="at.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor"
+                      d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783z" />
+                  </svg>
+                  AT
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="sms.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor"
+                      d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z" />
+                  </svg>
+                  短信
+                </a>
+              </li>
+            </ul>
+
+            <div class="d-flex align-items-center gap-3">
+              <button class="btn btn-link text-reset p-0" id="darkModeToggle" title="切换主题">
+                <svg width="20" height="20" viewBox="0 0 16 16">
+                  <path fill="currentColor"
+                    d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z" />
+                </svg>
+              </button>
+
+              <select id="modemSelector" class="form-select" x-model="selectedCfg" @change="changeCfg()"
+                style="min-width: 200px;">
+                <template x-for="cfg in cfgList" :key="cfg.value">
+                  <option :value="cfg.value" x-text="cfg.name"></option>
+                </template>
+              </select>
             </div>
           </div>
-        </nav>
+        </div>
+      </nav>
 
-        <div class="row align-items-center mt-5 gap-md-3 gap-2">
-          <div class="col align-self-center">
-            <div class="card">
-              <div
-                class="card-body d-flex flex-column align-items-center justify-content-center"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 320 512"
-                  height="85"
-                  width="85"
-                >
-                  <path
-                    fill="#fdb53c"
-                    d="M160 64c-26.5 0-48 21.5-48 48V276.5c0 17.3-7.1 31.9-15.3 42.5C86.2 332.6 80 349.5 80 368c0 44.2 35.8 80 80 80s80-35.8 80-80c0-18.5-6.2-35.4-16.7-48.9c-8.2-10.6-15.3-25.2-15.3-42.5V112c0-26.5-21.5-48-48-48zM48 112C48 50.2 98.1 0 160 0s112 50.1 112 112V276.5c0 .1 .1 .3 .2 .6c.2 .6 .8 1.6 1.7 2.8c18.9 24.4 30.1 55 30.1 88.1c0 79.5-64.5 144-144 144S16 447.5 16 368c0-33.2 11.2-63.8 30.1-88.1c.9-1.2 1.5-2.2 1.7-2.8c.1-.3 .2-.5 .2-.6V112zM208 368c0 26.5-21.5 48-48 48s-48-21.5-48-48c0-20.9 13.4-38.7 32-45.3V272c0-8.8 7.2-16 16-16s16 7.2 16 16v50.7c18.6 6.6 32 24.4 32 45.3z"
-                  />
+      <!-- 状态卡片区域 -->
+      <div class="row g-3 mb-5 status-cards-row">
+        <!-- 温度卡片 -->
+        <div class="col-6 col-md-6 col-lg-3 d-flex">
+          <div class="card status-card fade-in flex-fill" :class="{'status-indicator': temperature !== '0'}">
+            <div class="card-body text-center">
+              <div class="mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" height="60" width="60">
+                  <path fill="#fdb53c"
+                    d="M160 64c-26.5 0-48 21.5-48 48V276.5c0 17.3-7.1 31.9-15.3 42.5C86.2 332.6 80 349.5 80 368c0 44.2 35.8 80 80 80s80-35.8 80-80c0-18.5-6.2-35.4-16.7-48.9c-8.2-10.6-15.3-25.2-15.3-42.5V112c0-26.5-21.5-48-48-48zM48 112C48 50.2 98.1 0 160 0s112 50.1 112 112V276.5c0 .1 .1 .3 .2 .6c.2 .6 .8 1.6 1.7 2.8c18.9 24.4 30.1 55 30.1 88.1c0 79.5-64.5 144-144 144S16 447.5 16 368c0-33.2 11.2-63.8 30.1-88.1c.9-1.2 1.5-2.2 1.7-2.8c.1-.3 .2-.5 .2-.6V112zM208 368c0 26.5-21.5 48-48 48s-48-21.5-48-48c0-20.9 13.4-38.7 32-45.3V272c0-8.8 7.2-16 16-16s16 7.2 16 16v50.7c18.6 6.6 32 24.4 32 45.3z" />
                 </svg>
-                <h1
-                  class="card-text mt-4"
-                  x-text="temperature + ' &deg;C'"
-                ></h1>
               </div>
-              <div class="card-footer"
-              style="text-align:center;">
-              模块温度</div>
-            </div>
-          </div>
-
-          <div class="col align-self-center">
-            <div class="card">
-              <div
-                class="card-body d-flex flex-column align-items-center justify-content-center"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 384 512"
-                  height="85"
-                  width="85"
-                >
-                  <path
-                    fill="#6a46d8"
-                    d="M64 0H242.7c17 0 33.3 6.7 45.3 18.7L365.3 96c12 12 18.7 28.3 18.7 45.3V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V64C0 28.7 28.7 0 64 0zM96 192c-17.7 0-32 14.3-32 32v32h64V192H96zM64 352h80 96 80V288H240 144 64v64zM320 224c0-17.7-14.3-32-32-32H256v64h64V224zM160 192v64h64V192H160zM288 448c17.7 0 32-14.3 32-32V384H256v64h32zM160 384v64h64V384H160zM64 416c0 17.7 14.3 32 32 32h32V384H64v32z"
-                  />
-                </svg>
-                <h1 class="card-text mt-4" x-text="simStatus"></h1>
-              </div>
-              <div class="card-footer"
-              style="text-align:center;">
-              SIM卡状态</div>
-            </div>
-          </div>
-
-          <div class="col align-self-center">
-            <div class="card">
-              <div
-                class="card-body d-flex flex-column align-items-center justify-content-center"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 640 512"
-                  height="85"
-                  width="85"
-                >
-                  <path
-                    fill="#2fa7fb"
-                    d="M576 0c17.7 0 32 14.3 32 32V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V32c0-17.7 14.3-32 32-32zM448 96c17.7 0 32 14.3 32 32V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V128c0-17.7 14.3-32 32-32zM352 224V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V224c0-17.7 14.3-32 32-32s32 14.3 32 32zM192 288c17.7 0 32 14.3 32 32V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V320c0-17.7 14.3-32 32-32zM96 416v64c0 17.7-14.3 32-32 32s-32-14.3-32-32V416c0-17.7 14.3-32 32-32s32 14.3 32 32z"
-                  />
-                </svg>
-                <h1 class="card-text mt-4" x-text="signalPercentage + '%'"></h1>
-              </div>
-              <div class="card-footer"
-              style="text-align:center;">
-              信号强度</div>
-            </div>
-          </div>
-
-          <div class="col align-self-center">
-            <div class="card">
-              <div
-                class="card-body d-flex flex-column align-items-center justify-content-center"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 640 512"
-                  height="85"
-                  width="85"
-                >
-                  <path
-                    fill="#20c0ae"
-                    d="M0 336c0 79.5 64.5 144 144 144H512c70.7 0 128-57.3 128-128c0-61.9-44-113.6-102.4-125.4c4.1-10.7 6.4-22.4 6.4-34.6c0-53-43-96-96-96c-19.7 0-38.1 6-53.3 16.2C367 64.2 315.3 32 256 32C167.6 32 96 103.6 96 192c0 2.7 .1 5.4 .2 8.1C40.2 219.8 0 273.2 0 336z"
-                  />
-                </svg>
-                <h1
-                  class="card-text mt-4"
-                  x-text="internetConnectionStatus"
-                ></h1>
-              </div>
-              <div class="card-footer"
-              style="text-align:center;">
-              网络状态</div>
+              <div class="metric-value" x-text="temperature + '°C'"></div>
             </div>
           </div>
         </div>
 
-        <div class="row mt-5 gap-3">
-          <div class="col">
-            <div class="card">
-              <div class="card-header">网络信息</div>
-              <div class="card-body">
-                <div class="card-text table-responsive-sm">
-                  <table class="table">
-              <style>.table th,.table td {  white-space: nowrap; /* 防止换行 */}</style>
-                    <tbody>
-                      <tr>
-                        <th scope="row">SIM卡</th>
-                        <td x-text="activeSim"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">运营商</th>
-                        <td x-text="networkProvider"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">运营商代码</th>
-                        <td x-text="mccmnc"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">接入点APN</th>
-                        <td x-text="apn"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">签约速率Mbps</th>
-                        <td x-text="ambr"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">网络模式</th>
-                        <td x-text="networkMode"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">频段</th>
-                        <td x-text="bands"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">下行带宽</th>
-                        <td x-text="dlbandwidth"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">上行带宽</th>
-                        <td x-text="ulbandwidth"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">频点</th>
-                        <td x-text="earfcns"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">PCI</th>
-                        <td
-                          x-show="sccPCI != '-'"
-                          x-text="pccPCI + ', ' + sccPCI"
-                        ></td>
-                        <td x-show="sccPCI == '-'" x-text="pccPCI"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">IPv<sup>4</sup></th>
-                        <td x-text="ipv4"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">IPv<sup>6</sup></th>
-                        <td x-text="ipv6"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">在线时长</th>
-                        <td x-text="uptime"></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+        <!-- SIM卡状态 -->
+        <div class="col-6 col-md-6 col-lg-3 d-flex">
+          <div class="card status-card fade-in flex-fill" :class="{'status-indicator': simStatus === '已激活'}">
+            <div class="card-body text-center">
+              <div class="mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" height="60" width="60">
+                  <path fill="#6a46d8"
+                    d="M64 0H242.7c17 0 33.3 6.7 45.3 18.7L365.3 96c12 12 18.7 28.3 18.7 45.3V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V64C0 28.7 28.7 0 64 0zM96 192c-17.7 0-32 14.3-32 32v32h64V192H96zM64 352h80 96 80V288H240 144 64v64zM320 224c0-17.7-14.3-32-32-32H256v64h64V224zM160 192v64h64V192H160zM288 448c17.7 0 32-14.3 32-32V384H256v64h32zM160 384v64h64V384H160zM64 416c0 17.7 14.3 32 32 32h32V384H64v32z" />
+                </svg>
               </div>
-              <div class="card-footer">
-                <div class="row row-cols-2">
-                  <div class="col">
-                    <p class="btn">刷新率(>3s)</p>
-                  </div>
-                  <div class="col">
-                    <div class="input-group">
-                      <input
-                        x-model="newRefreshRate"
-                        class="form-control"
-                        type="number"
-                        min="3"
-                        max="60"
-                        x-bind:placeholder="refreshRate + 's'"
-                      />
-                      <button
-                        @click="updateRefreshRate()"
-                        class="btn btn-outline-secondary"
-                        type="button"
-                      >
-                        设置
-                      </button>
-                    </div>
-                  </div>
-                </div>
+              <!-- 未激活显示原样 -->
+              <div class="metric-value" x-show="simStatus !== '已激活'" x-text="simStatus"></div>
+              <!-- 已激活时：已激活 + 图标 + 运营商 -->
+              <div class="metric-value d-flex justify-content-center align-items-center gap-2 flex-wrap" x-show="simStatus === '已激活'">
+                <!-- 运营商图标（改成本地图片） -->
+                <template x-if="networkProvider === '中国移动'">
+                  <img src="file/cm.png" alt="中国移动" class="carrier-logo">
+                </template>
+                <template x-if="networkProvider === '中国联通'">
+                  <img src="file/cu.png" alt="中国联通" class="carrier-logo">
+                </template>
+                <template x-if="networkProvider === '中国电信'">
+                  <img src="file/ct.png" alt="中国电信" class="carrier-logo">
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 信号强度 -->
+        <div class="col-6 col-md-6 col-lg-3 d-flex">
+          <div class="card status-card fade-in flex-fill" :class="{'status-indicator': signalPercentage > 0}">
+            <div class="card-body text-center">
+              <div class="mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height="60" width="60">
+                  <path fill="#2fa7fb"
+                    d="M576 0c17.7 0 32 14.3 32 32V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V32c0-17.7 14.3-32 32-32zM448 96c17.7 0 32 14.3 32 32V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V128c0-17.7 14.3-32 32-32zM352 224V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V224c0-17.7 14.3-32 32-32s32 14.3 32 32zM192 288c17.7 0 32 14.3 32 32V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V320c0-17.7 14.3-32 32-32zM96 416v64c0 17.7-14.3 32-32 32s-32-14.3-32-32V416c0-17.7 14.3-32 32-32s32 14.3 32 32z" />
+                </svg>
+              </div>
+              <div class="metric-value" x-text="signalPercentage + '%'"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 网络状态 -->
+        <div class="col-6 col-md-6 col-lg-3 d-flex">
+          <div class="card status-card fade-in flex-fill" :class="{'status-indicator': internetConnectionStatus === '已连接'}">
+            <div class="card-body text-center">
+              <div class="mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height="60" width="60">
+                  <path fill="#20c0ae"
+                    d="M0 336c0 79.5 64.5 144 144 144H512c70.7 0 128-57.3 128-128c0-61.9-44-113.6-102.4-125.4c4.1-10.7 6.4-22.4 6.4-34.6c0-53-43-96-96-96c-19.7 0-38.1 6-53.3 16.2C367 64.2 315.3 32 256 32C167.6 32 96 103.6 96 192c0 2.7 .1 5.4 .2 8.1C40.2 219.8 0 273.2 0 336z" />
+                </svg>
+              </div>
+              <div class="metric-value" x-text="internetConnectionStatus"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- 详细信息区域 -->
+      <div class="row g-4">
+        <!-- 左侧列 -->
+        <div class="col-lg-6">
+          <!-- 基本信息 -->
+          <div class="card mb-4 fade-in" x-show="getDataByClass('基本信息').length > 0">
+            <div class="card-header">
+              <i class="bi bi-info-circle me-2"></i>基本信息
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <tbody>
+                    <template x-for="item in getDataByClass('基本信息')" :key="item.key">
+                      <tr>
+                        <th scope="row" class="col-name" x-text="item.full_name || item.key"></th>
+                        <td class="col-content" x-text="item.value"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
 
-          <div class="col">
-            <div class="card">
-              <div class="card-header">信号</div>
-              <div class="card-body">
-                <div class="card-text table-responsive-sm">
-                  <table class="table">
-                    <tbody>
+          <!-- 网络信息 -->
+          <div class="card fade-in"
+            x-show="getDataByClass('网络信息').length > 0 || modem_uptime || uptime || downloadStat || uploadStat">
+            <div class="card-header">
+              <i class="bi bi-wifi me-2"></i>网络信息
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <tbody>
+                    <template x-for="item in getDataByClass('网络信息')" :key="item.key">
                       <tr>
-                        <th scope="row">评估</th>
-                        <td x-text="signalAssessment"></td>
+                        <th scope="row" class="col-name" x-text="item.full_name || item.key"></th>
+                        <td class="col-content" x-text="item.value"></td>
                       </tr>
-                      <tr>
-                        <th scope="row">流量统计</th>
-                        <td
-                          x-text="downloadStat + ' 上传 / ' + uploadStat + ' 下载'"
-                        ></td>
-                      </tr>
-                      <tr x-show="csq != 'NR-SA Mode'">
-                        <th scope="row">CSQ</th>
-                        <td x-show="csq != '-'" x-text="csq"></td>
-                        <td x-show="csq == '-'" class="fst-italic">None</td>
-                      </tr>
-                      <tr>
-                        <th scope="row">小区ID</th>
-                        <td x-text="cellID"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">eNB ID</th>
-                        <td x-text="eNBID"></td>
-                      </tr>
-                      <tr>
-                        <th scope="row">LAC ID</th>
-                        <td x-text="tac"></td>
-                      </tr>
-                      <!-- <tr x-show="rssi != '-'">
-                        <th scope="row">RSSI<sup>4G</sup></th>
-                        <td x-show="rssi != '-'" x-text="rssi"></td>
-                        <td x-show="rssi == '-'" class="fst-italic">None</td>
-                      </tr> -->
-                      <tr x-show="rsrqLTE != '-'">
-                        <th scope="row">SS_RSRQ<sup>4G</sup></th>
-                        <td
-                          class="gap-4 align-items-center"
-                          x-data="{ getProgressBarClass: function() {
-                          // Remove the percentage sign and convert to integer
-                          var percentage = parseInt(this.rsrqLTEPercentage);
-                          
-                          if (percentage >= 60) {
-                              return 'progress-bar bg-success is-medium';
-                          } else if (percentage >= 40) {
-                              return 'progress-bar bg-warning is-warning is-medium';
-                          } else {
-                              return 'progress-bar bg-danger is-medium';
-                          }
-                      } }"
-                        >
-                          <div
-                            x-show="rsrqLTE != '-' && rsrqLTEPercentage != '0'"
-                            class="progress w-100"
-                            role="progressbar"
-                            aria-label="RSRQ BAR"
-                            :aria-valuenow="rsrqLTEPercentage"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            style="height: 18px"
-                          >
-                            <div
-                              :class="getProgressBarClass()"
-                              :style="'width: ' + rsrqLTEPercentage + '%'"
-                            >
-                              <span
-                                x-text="rsrqLTE + ' / ' +  rsrqLTEPercentage + '%'"
-                              ></span>
-                            </div>
-                          </div>
-                          <span
-                            x-show="rsrqLTEPercentage == '0'"
-                            x-text="rsrqLTE"
-                          ></span>
-                          <span x-show="rsrqLTE == '-'" class="fst-italic">
-                            None
-                          </span>
-                        </td>
-                      </tr>
-                      <tr x-show="rsrqNR != '-'">
-                        <th scope="row">SS_RSRQ<sup>5G</sup></th>
-                        <td
-                          x-data="{ getProgressBarClass: function() {
-                          // Remove the percentage sign and convert to integer
-                          var percentage = parseInt(this.rsrqNRPercentage);
-                          
-                          if (percentage >= 60) {
-                              return 'progress-bar bg-success is-medium';
-                          } else if (percentage >= 40) {
-                              return 'progress-bar bg-warning is-warning is-medium';
-                          } else {
-                              return 'progress-bar bg-danger is-medium';
-                          }
-                      } }"
-                        >
-                          <div
-                            x-show="rsrqNR != '-' && rsrqNRPercentage != '0'"
-                            class="progress w-100"
-                            role="progressbar"
-                            aria-label="RSRQ BAR"
-                            :aria-valuenow="rsrqNRPercentage"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            style="height: 18px"
-                          >
-                            <div
-                              :class="getProgressBarClass()"
-                              :style="'width: ' + rsrqNRPercentage + '%'"
-                            >
-                              <span
-                                x-text="rsrqNR + ' / ' + rsrqNRPercentage + '%'"
-                              ></span>
-                            </div>
-                          </div>
-                          <span
-                            x-show="rsrqNRPercentage == '0'"
-                            x-text="rsrqNR"
-                          ></span>
-                          <span x-show="rsrqNR == '-'" class="fst-italic">
-                            None
-                          </span>
-                        </td>
-                      </tr>
-                      <tr x-show="rsrpLTE != '-'">
-                        <th scope="row">RSRP<sup>4G</sup></th>
-                        <td
-                          class="gap-4 align-items-center"
-                          x-data="{
-                          getProgressBarClass: function() {
-                              // Remove the percentage sign and convert to integer
-                              var percentage = parseInt(this.rsrpLTEPercentage);
-                              
-                              if (percentage >= 60) {
-                                  return 'progress-bar bg-success is-medium';
-                              } else if (percentage >= 40) {
-                                  return 'progress-bar bg-warning is-warning is-medium';
-                              } else {
-                                  return 'progress-bar bg-danger is-medium';
-                              }
-                          }
-                        }"
-                        >
-                          <div
-                            x-show="rsrpLTE != '-' && rsrpLTEPercentage != '0'"
-                            class="progress w-100"
-                            role="progressbar"
-                            aria-label="RSRP BAR"
-                            :aria-valuenow="rsrpLTEPercentage"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            style="height: 18px"
-                          >
-                            <div
-                              :class="getProgressBarClass()"
-                              :style="'width: ' + rsrpLTEPercentage + '%'"
-                            >
-                              <span
-                                x-text="rsrpLTE + ' / ' + rsrpLTEPercentage + '%'"
-                              ></span>
-                            </div>
-                          </div>
-                          <span
-                            x-show="rsrpLTEPercentage == '0'"
-                            x-text="rsrpLTE"
-                          ></span>
-                          <span x-show="rsrpLTE == '-'" class="fst-italic">
-                            None
-                          </span>
-                        </td>
-                      </tr>
-                      <tr x-show="rsrpNR != '-'">
-                        <th scope="row">SS_RSRP<sup>5G</sup></th>
-                        <td
-                          class="gap-4 align-items-center"
-                          x-data="{
-                          getProgressBarClass: function() {
-                              // Remove the percentage sign and convert to integer
-                              var percentage = parseInt(this.rsrpNRPercentage);
-                              
-                              if (percentage >= 60) {
-                                  return 'progress-bar bg-success is-medium';
-                              } else if (percentage >= 40) {
-                                  return 'progress-bar bg-warning is-warning is-medium';
-                              } else {
-                                  return 'progress-bar bg-danger is-medium';
-                              }
-                          }
-                        }"
-                        >
-                          <div
-                            x-show="rsrpNR != '-' && rsrpNRPercentage != '0'"
-                            class="progress w-100"
-                            role="progressbar"
-                            aria-label="RSRP BAR"
-                            :aria-valuenow="rsrpNRPercentage"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            style="height: 18px"
-                          >
-                            <div
-                              :class="getProgressBarClass()"
-                              :style="'width: ' + rsrpNRPercentage + '%'"
-                            >
-                              <span
-                                x-text="rsrpNR + ' / ' + rsrpNRPercentage + '%'"
-                              ></span>
-                            </div>
-                          </div>
-                          <span
-                            x-show="rsrpNRPercentage == '0'"
-                            x-text="rsrpNR"
-                          ></span>
-                          <span x-show="rsrpNR == '-'" class="fst-italic">
-                            None
-                          </span>
-                        </td>
-                      </tr>
-                      <tr x-show="sinrLTE != '-'">
-                        <th scope="row">SINR<sup>4G</sup></th>
-                        <td
-                          class="gap-4 align-items-center"
-                          x-data="{
-                          getProgressBarClass: function() {
-                              // Remove the percentage sign and convert to integer
-                              var percentage = parseInt(this.sinrLTEPercentage);
-                              
-                              if (percentage >= 60) {
-                                  return 'progress-bar bg-success is-medium';
-                              } else if (percentage >= 40) {
-                                  return 'progress-bar bg-warning is-warning is-medium';
-                              } else {
-                                  return 'progress-bar bg-danger is-medium';
-                              }
-                          }
-                        }"
-                        >
-                          <div
-                            x-show="sinrLTE != '-' && sinrLTEPercentage != '0'"
-                            class="progress w-100"
-                            role="progressbar"
-                            aria-label="SINR BAR"
-                            :aria-valuenow="sinrLTEPercentage"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            style="height: 18px"
-                          >
-                            <div
-                              :class="getProgressBarClass()"
-                              :style="'width: ' + sinrLTEPercentage +'%'"
-                            >
-                              <span
-                                x-text="sinrLTE + ' / ' + sinrLTEPercentage +'%'"
-                              ></span>
-                            </div>
-                          </div>
-                          <span
-                            x-text="sinrLTE"
-                            x-show="sinrLTEPercentage == '0'"
-                          ></span>
-                          <span x-show="sinrLTE == '-'" class="fst-italic">
-                            None
-                          </span>
-                        </td>
-                      </tr>
-                      <tr x-show="sinrNR != '-'">
-                        <th scope="row">SINR<sup>5G</sup></th>
-                        <td
-                          class="gap-4 align-items-center"
-                          x-data="{
-                          getProgressBarClass: function() {
-                              // Remove the percentage sign and convert to integer
-                              var percentage = parseInt(this.sinrNRPercentage);
-                              
-                              if (percentage >= 60) {
-                                  return 'progress-bar bg-success is-medium';
-                              } else if (percentage >= 40) {
-                                  return 'progress-bar bg-warning is-warning is-medium';
-                              } else {
-                                  return 'progress-bar bg-danger is-medium';
-                              }
-                          }
-                        }"
-                        >
-                          <div
-                            x-show="sinrNR != '-' && sinrNRPercentage != '0'"
-                            class="progress w-100"
-                            role="progressbar"
-                            aria-label="SINR BAR"
-                            :aria-valuenow="sinrNRPercentage"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            style="height: 18px"
-                          >
-                            <div
-                              :class="getProgressBarClass()"
-                              :style="'width: ' + sinrNRPercentage +'%'"
-                            >
-                              <span
-                                x-text="sinrNR + ' / ' + sinrNRPercentage +'%'"
-                              ></span>
-                            </div>
-                          </div>
-                          <span
-                            x-text="sinrNR"
-                            x-show="sinrNRPercentage == '0'"
-                          ></span>
-                          <span x-show="sinrNR == '-'" class="fst-italic">
-                            None
-                          </span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                    </template>
+                    <tr x-show="downloadStat">
+                      <th scope="row" class="col-name">📥 下载流量</th>
+                      <td class="col-content"><span class="badge bg-primary" x-text="downloadStat"></span></td>
+                    </tr>
+                    <tr x-show="uploadStat">
+                      <th scope="row" class="col-name">📤 上传流量</th>
+                      <td class="col-content"><span class="badge bg-success" x-text="uploadStat"></span></td>
+                    </tr>
+                    <tr x-show="modem_uptime">
+                      <th scope="row" class="col-name">⏱️ 模块在线时间</th>
+                      <td class="col-content" x-text="modem_uptime"></td>
+                    </tr>
+                    <tr x-show="uptime">
+                      <th scope="row" class="col-name">🕐 设备在线时间</th>
+                      <td class="col-content" x-text="uptime"></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <div class="card-footer">
-                <div class="card-text">
-                  <div class="row">
-                    <div class="col">
-                      <div>
-                        <p>更新时间</p>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <p x-text="lastUpdate"></p>
-                    </div>
+            </div>
+            <div class="card-footer refresh-controls">
+              <div class="d-flex align-items-center justify-content-between flex-wrap">
+                <div class="d-flex align-items-center mb-2 mb-md-0">
+                  <span class="text-muted small me-2">🔄 刷新率</span>
+                  <div class="input-group input-group-sm" style="width: 120px;">
+                    <input x-model="newRefreshRate" class="form-control" type="number" min="3" max="60"
+                      :placeholder="refreshRate + 's'" />
+                    <button @click="updateRefreshRate()" class="btn btn-outline-primary btn-sm" type="button">
+                      设置
+                    </button>
                   </div>
                 </div>
+                <div>
+                  <small class="text-muted">
+                    <i class="bi bi-clock me-1"></i>
+                    <span x-text="lastUpdate"></span>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧列 -->
+        <div class="col-lg-6">
+          <!-- SIM卡信息 -->
+          <div class="card mb-4 fade-in" x-show="getDataByClass('SIM卡信息').length > 0">
+            <div class="card-header" data-bs-toggle="collapse" href="#simInfoCollapse" role="button"
+              style="cursor: pointer;">
+              <i class="bi bi-sim me-2"></i>SIM卡信息
+              <i class="bi bi-chevron-down float-end collapse-icon">⬇</i>
+            </div>
+            <div class="card-body p-0 collapse" id="simInfoCollapse">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <tbody>
+                    <template x-for="item in getDataByClass('SIM卡信息')" :key="item.key">
+                      <tr>
+                        <th scope="row" class="col-name" x-text="item.full_name || item.key"></th>
+                        <td class="col-content" x-text="item.value"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 基站信息 -->
+          <div class="card fade-in" x-show="getDataByClass('基站信息').length > 0">
+            <div class="card-header">
+              <i class="bi bi-broadcast me-2"></i>基站信息
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <tbody>
+                    <template x-for="item in getDataByClass('基站信息')" :key="item.key">
+                      <tr>
+                        <th scope="row" class="col-name" x-text="item.full_name || item.key"></th>
+                        <td class="col-content">
+                          <!-- 进度条显示 -->
+                          <div x-show="item.type === 'progress_bar'" class="progress-container">
+                            <div class="progress" style="height: 24px;">
+                              <div :class="getProgressBarClass(getProgressPercentage(item))"
+                                :style="'width: ' + Math.max(getProgressPercentage(item), 8) + '%'"
+                                :aria-valuenow="getProgressPercentage(item)" aria-valuemin="0" aria-valuemax="100">
+                              </div>
+                            </div>
+                            <div class="progress-value-overlay"
+                              x-text="item.value + (item.unit ? ' ' + item.unit : '') + ' (' + getProgressPercentage(item) + '%)'">
+                            </div>
+                          </div>
+                          <!-- 普通文本显示 -->
+                          <span x-show="item.type === 'plain_text'" class="fw-semibold"
+                            x-text="item.value + (item.unit ? ' ' + item.unit : '')"></span>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </main>
-    <script src="js/dark-mode.js"></script>
+    </div>
+  </main>
 
-    <script>
-      function processAllInfos() {
-        return {
-          atcmd: "",
-          internetConnectionStatus: "已断开",
-          temperature: "0",
-          simStatus: "无SIM卡",
-          activeSim: "无SIM卡",
-          networkProvider: "N/A",
-          mccmnc: "00000",
-          apn: "未知",
-          networkMode: "已断开",
-          bands: "未知",
-          dlbandwidth: "未知",
-          ulbandwidth: "未知",
-          earfcns: "000",
-          pccPCI: "0",
-          sccPCI: "-",
-          ipv4: "000.000.000.000",
-          ipv6: "0000:0000:0000:0000:0000:0000:0000:0000",
-          cellID: "未知",
-          eNBID: "未知",
-          tac: "未知",
-          csq: "-",
-          // rssi: "-",
-          rsrpLTE: "-",
-          rsrpNR: "-",
-          rsrpLTEPercentage: "0%",
-          rsrpNRPercentage: "0%",
-          rsrqLTE: "-",
-          rsrqNR: "-",
-          rsrqLTEPercentage: "0%",
-          rsrqNRPercentage: "0%",
-          sinrLTE: "-",
-          sinrNR: "-",
-          sinrLTEPercentage: "0%",
-          sinrNRPercentage: "0%",
-          signalPercentage: "0",
-          signalAssessment: "未知",
-          uptime: "Unknown",
-          lastUpdate: new Date().toLocaleString(),
-          newRefreshRate: null,
-          refreshRate: 6,
-          nrDownload: "0",
-          nrUpload: "0",
-          nonNrDownload: "0",
-          nonNrUpload: "0",
-          downloadStat: "0",
-          uploadStat: "0",
-          mccmncNumber: "未知",
-          ambr: "未知",
-          qci: "未知",
-          cfgList: [],
-          selectedCfg: null,
-          intervalId: null,
-          init() {
-            this.updateCfgList();
-          },
-          updateCfgList() {
-            fetch('/cgi-bin/luci/admin/modem/qmodem/get_modem_cfg')
-              .then(response => response.json())
-              .then(data => {
-                this.cfgList = data.cfgs.map(cfg => ({ value: cfg.cfg, name: cfg.name }));
-                if (this.cfgList.length > 0 && !this.selectedCfg) {
+  <script src="js/dark-mode.js"></script>
+  <script>
+    function processAllInfos() {
+      return {
+        internetConnectionStatus: "已断开",
+        temperature: "0",
+        simStatus: "无SIM卡",
+        activeSim: "无SIM卡",
+        networkProvider: "未知运营商",
+        mccmnc: "00000",
+        apn: "未知",
+        networkMode: "已断开",
+        bands: "未知",
+        dlbandwidth: "未知",
+        ulbandwidth: "未知",
+        earfcns: "000",
+        pccPCI: "0",
+        sccPCI: "-",
+        ipv4: "000.000.000.000",
+        ipv6: "0000:0000:0000:0000:0000:0000:0000:0000",
+        cellID: "未知",
+        eNBID: "未知",
+        tac: "未知",
+        csq: "-",
+        rsrpLTE: "-",
+        rsrpNR: "-",
+        rsrpLTEPercentage: "0%",
+        rsrpNRPercentage: "0%",
+        rsrqLTE: "-",
+        rsrqNR: "-",
+        rsrqLTEPercentage: "0%",
+        rsrqNRPercentage: "0%",
+        sinrLTE: "-",
+        sinrNR: "-",
+        sinrLTEPercentage: "0%",
+        sinrNRPercentage: "0%",
+        signalPercentage: "0",
+        signalAssessment: "未知",
+        uptime: "Unknown",
+        modem_uptime: "Unknown",
+        lastUpdate: new Date().toLocaleString(),
+        newRefreshRate: null,
+        refreshRate: 5,
+        downloadStat: "0",
+        uploadStat: "0",
+        cfgList: [],
+        selectedCfg: null,
+        intervalId: null,
+        dataItems: [], // 存储动态数据项
+        isLoading: false,
+        isInitialLoading: true,
+        init() {
+          console.log('初始化模块管理系统...');
+          const savedRate = localStorage.getItem('refreshRate');
+          if (savedRate) {
+            this.refreshRate = parseInt(savedRate);
+            this.newRefreshRate = this.refreshRate;
+          } else {
+            this.newRefreshRate = this.refreshRate;
+          }
+          this.updateCfgList();
+        },
+        updateCfgList() {
+          console.log('正在获取配置列表...');
+
+          fetch('/cgi-bin/luci/admin/modem/qmodem/get_modem_cfg')
+            .then(response => {
+              console.log('配置请求状态:', response.status);
+              if (response.status === 403) {
+                window.location.href = '/cgi-bin/luci/admin/modem/qwebui';
+                return;
+              }
+              return response.json();
+            })
+            .then(data => {
+              console.log('获取到配置数据:', data);
+              if (!data) {
+                console.error('配置数据为空');
+                return;
+              }
+
+              this.cfgList = data.cfgs.map(cfg => ({ value: cfg.cfg, name: cfg.name }));
+              console.log('处理后的配置列表:', this.cfgList);
+
+              if (this.cfgList.length > 0) {
+                if (!this.selectedCfg) {
                   this.selectedCfg = this.cfgList[0].value;
                 }
-                this.fetchAllInfo();
-                this.intervalId = setInterval(() => {
-                  this.fetchAllInfo();
-                }, this.refreshRate * 1000);
-              })
-              .catch(error => console.error('Error fetching cfg list:', error));
-          },
-          changeCfg() {
+                console.log('选中配置:', this.selectedCfg);
+                this.changeCfg();
+              } else {
+                console.warn('未找到可用配置');
+                this.showNotification("未找到调制解调器配置，请检查设备连接。", "warning");
+                this.cfgList = [{ value: '', name: '无可用配置' }];
+                this.selectedCfg = '';
+              }
+            })
+            .catch(error => {
+              console.error('获取配置列表失败:', error);
+              this.showNotification("获取调制解调器配置失败，请检查网络或设备。", "danger");
+            })
+            .finally(() => {
+              this.isInitialLoading = false;
+            });
+        },
+        changeCfg() {
+          if (!this.selectedCfg) {
+            console.warn('未选择配置，跳过数据获取');
+            this.isLoading = false;
+            return;
+          }
+
+          console.log('切换到配置:', this.selectedCfg);
+          this.fetchAllInfo();
+
+          clearInterval(this.intervalId);
+          this.intervalId = setInterval(() => {
             this.fetchAllInfo();
+          }, this.refreshRate * 1000);
+        },
+        fetchAllInfo() {
+          if (!this.selectedCfg) {
+            console.warn('配置未选择，跳过数据获取');
+            return;
+          }
+
+          console.log('开始获取所有信息...');
+          // 不是初始加载时才显示小的加载状态
+          if (!this.isInitialLoading) {
+            this.isLoading = true;
+          }
+
+          const promises = [
+            this.fetchIPs(),
+            this.fetchModemInfo(),
+            this.fetchUpTime(),
+            this.fetchPingStatus(),
+            this.fetchTrafficStats()
+          ];
+
+          Promise.allSettled(promises)
+            .then(results => {
+              console.log('所有请求完成，结果:', results);
+
+              // 检查是否有请求失败
+              const failures = results.filter(result => result.status === 'rejected');
+              if (failures.length > 0) {
+                console.warn('部分请求失败:', failures);
+              }
+            })
+            .finally(() => {
+              this.isLoading = false;
+              this.lastUpdate = new Date().toLocaleString();
+              console.log('数据更新完成:', this.lastUpdate);
+            });
+        },
+        fetchModemInfo() {
+          console.log('获取调制解调器信息...');
+          return fetch('/cgi-bin/luci/admin/modem/qmodem/modem_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'info',
+            translate: '1'
+          }))
+            .then(response => {
+              console.log('调制解调器信息响应状态:', response.status);
+              return response.json();
+            })
+            .then(data => {
+              console.log('调制解调器信息数据:', data);
+              this.parseData(data);
+            })
+            .catch(error => {
+              console.error('获取调制解调器信息失败:', error);
+              throw error;
+            });
+        },
+        fetchPingStatus() {
+          return fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'get_ping'
+          }))
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.status === "connected") {
+                this.internetConnectionStatus = "已连接";
+              } else if (data.status === "dns_blocked") {
+                this.internetConnectionStatus = "DNS阻断";
+              } else {
+                this.internetConnectionStatus = "已断开";
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              this.internetConnectionStatus = "已断开";
+            });
+        },
+        fetchTrafficStats() {
+          return fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'get_traffic'
+          }))
+            .then(response => response.json())
+            .then(data => {
+              this.uploadStat = this.bytesToSize(data.rx_bytes);
+              this.downloadStat = this.bytesToSize(data.tx_bytes);
+            })
+            .catch(error => console.error('Error fetching traffic:', error));
+        },
+        showNotification(message, type = 'info') {
+          console.log(`[${type.toUpperCase()}] ${message}`);
+
+          // 创建右上角通知容器（如不存在则创建）
+          let container = document.getElementById('notification-container');
+          if (!container) {
+            container = document.createElement('div');
+            container.id = 'notification-container';
+            container.style.position = 'fixed';
+            container.style.top = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            container.style.maxWidth = '350px';
+            container.style.pointerEvents = 'none';
+            document.body.appendChild(container);
+          }
+
+          const notification = document.createElement('div');
+          notification.className = `alert alert-${type === 'danger' ? 'danger' : type === 'warning' ? 'warning' : 'success'} notification`;
+          notification.style.marginBottom = '10px';
+          notification.style.pointerEvents = 'auto';
+          notification.innerHTML = `
+            <div class="d-flex align-items-center">
+              <span>${message}</span>
+              <button type="button" class="btn-close ms-auto" aria-label="Close"></button>
+            </div>
+          `;
+
+          container.appendChild(notification);
+
+          notification.querySelector('.btn-close').addEventListener('click', () => {
+            notification.remove();
+          });
+
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.remove();
+            }
+          }, 5000);
+        },
+        bytesToSize(bytes) {
+          const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+          if (bytes == 0) return "0 Byte";
+          const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+          return Math.round(bytes / Math.pow(1024, i), 2) + " " + sizes[i];
+        },
+        calculateRSRPPercentage(rsrp) {
+          let RSRP_min = -135;
+          let RSRP_max = -65;
+          if (isNaN(rsrp) || rsrp < -140) return 0;
+          let percentage = ((rsrp - RSRP_min) / (RSRP_max - RSRP_min)) * 100;
+          if (percentage > 100) percentage = 100;
+          if (percentage < 15) percentage = 15;
+          return Math.round(percentage);
+        },
+        calculateRSRQPercentage(rsrq) {
+          let RSRQ_min = -20;
+          let RSRQ_max = -8;
+          if (isNaN(rsrq) || rsrq < -20) return 0;
+          let percentage = ((rsrq - RSRQ_min) / (RSRQ_max - RSRQ_min)) * 100;
+          if (percentage > 100) percentage = 100;
+          if (percentage < 15) percentage = 15;
+          return Math.round(percentage);
+        },
+        calculateSINRPercentage(sinr) {
+          let SINR_min = -10;
+          let SINR_max = 35;
+          if (isNaN(sinr)) return 0;
+          let percentage = ((sinr - SINR_min) / (SINR_max - SINR_min)) * 100;
+          if (percentage > 100) percentage = 100;
+          if (percentage < 15) percentage = 15;
+          return Math.round(percentage);
+        },
+        calculateSignalPercentage(rsrpNRPercentage, sinrNRPercentage) {
+          let average = (rsrpNRPercentage + sinrNRPercentage) / 2;
+          return Math.round(average);
+        },
+        fetchUpTime() {
+          return fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'get_uptime'
+          }))
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.uptime) {
+                const networkUptimeSeconds = parseInt(data.uptime);
+                this.uptime = this.formatUptime(networkUptimeSeconds);
+              } else {
+                this.uptime = "未知";
+              }
+
+              // 处理模块在线时间
+              if (data.network_uptime) {
+                const networkUptimeSeconds = parseInt(data.network_uptime);
+                this.modem_uptime = this.formatUptime(networkUptimeSeconds);
+              } else {
+                this.modem_uptime = "未知";
+              }
+            })
+            .catch(error => {
+              console.error('Error fetching uptime:', error);
+              this.uptime = "获取失败";
+              this.modem_uptime = "获取失败";
+            });
+        },
+        parseData(data) {
+          // 存储完整的数据项
+          this.dataItems = data.filter(item => {
+            // 过滤掉无效值
+            const defaultValues = ['未知', 'N/A', '未知运营商', '未知时间', '-', '0', '000', '00000',
+              '000.000.000.000', '0000:0000:0000:0000:0000:0000:0000:0000',
+              'Unknown', '已断开', '无SIM卡', '', null, undefined];
+
+            return item.value && !defaultValues.includes(item.value.toString().trim());
+          });
+
+          // 保持原有的特殊字段处理用于顶部卡片显示
+          let previousType = this.networkType;
+          for (let entry of data) {
+            if (entry.key === 'Network Type') {
+              this.networkType = entry.value;
+            } else if (entry.key === 'temperature') {
+              this.temperature = entry.value.replace('°C', '');
+            } else if (entry.key === 'SIM Status') {
+              this.simStatus = entry.value === 'ready' ? '已激活' : '无SIM卡';
+            } else if (entry.key === 'ISP') {
+              this.networkProvider = this.mapISPValue(entry.value);
+            }
+          }
+
+          // 计算信号强度百分比用于顶部显示
+          this.calculateSignalDisplay();
+        },
+        mapISPValue(val) {
+          switch ((val || '').trim()) {
+            case '\n4E2D56FD8054901A':
+            case 'CHN-CU':
+            case '46001':
+              return '中国联通';
+            case 'CHN-CT':
+            case '46003':
+              return '中国电信';
+            case 'CHN-CMCC':
+            case '46002':
+              return '中国移动';
+            default:
+              return val && val !== 'N/A' ? val : '未知运营商';
+          }
+        },
+        updateRefreshRate() {
+          if (this.newRefreshRate >= 3 && this.newRefreshRate <= 60) {
+            this.refreshRate = this.newRefreshRate;
+            localStorage.setItem('refreshRate', this.refreshRate); // 保存到本地
             clearInterval(this.intervalId);
             this.intervalId = setInterval(() => {
               this.fetchAllInfo();
             }, this.refreshRate * 1000);
-          },
-          fetchAllInfo() {
-            if (!this.selectedCfg) return;
-            fetch('/cgi-bin/luci/admin/modem/qmodem/modem_ctrl?' + new URLSearchParams({
-              cfg: this.selectedCfg,
-              action: 'info',
-              translate: '1'
-            }))
-              .then(response => response.json())
-              .then(data => {
-                this.parseData(data);
-                this.lastUpdate = new Date().toLocaleString();
-              })
-              .catch(error => console.error('Error fetching modem info:', error));
-          },
+          }
+        },
+        fetchIPs() {
+          if (!this.selectedCfg) return Promise.resolve();
+          return fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'get_ip',
+            translate: '1'
+          }))
+            .then(response => response.json())
+            .then(data => {
+              if (data.result) {
+                this.ipv4 = data.ipv4 || this.ipv4;
+                this.ipv6 = data.ipv6 || this.ipv6;
+              }
+            })
+            .catch(error => console.error('Error fetching IPs:', error));
+        },
+        formatUptime(seconds) {
+          if (isNaN(seconds) || seconds < 0) return "未知时间";
 
-          bytesToSize(bytes) {
-            const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-            if (bytes == 0) return "0 Byte";
-            const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
-            return Math.round(bytes / Math.pow(1024, i), 2) + " " + sizes[i];
-          },
+          const days = Math.floor(seconds / 86400);
+          const hours = Math.floor((seconds % 86400) / 3600);
+          const minutes = Math.floor((seconds % 3600) / 60);
 
-          requestPing() {
-            fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
-              cfg: this.selectedCfg,
-              action: 'get_ping',
-              translate: '1'
-            }))
-              .then((response) => response.json())
-                .then((data) => {
-                if (data && data.result) {
-                  return data.result;
-                }
-                return "Error";
-                })
-              .catch((error) => {
-                console.error("Error:", error);
-                // Throw the error again to ensure it's propagated
-                throw error;
-              });
-          },
+          let result = "";
+          if (days > 0) {
+            result += days + (days === 1 ? " 天" : " 天");
+          }
+          if (hours > 0) {
+            if (result) result += " ";
+            result += hours + (hours === 1 ? " 小时" : " 小时");
+          }
+          if (minutes > 0 || (!days && !hours)) {
+            if (result) result += " ";
+            result += minutes + (minutes === 1 ? " 分钟" : " 分钟");
+          }
 
-          calculate_lte_bw(lte_bw) {
-            switch (true) {
-              case 0:
-                return 1.4;
-              case 1:
-                return 3;
-              // Now case 2 - 5
-              case lte_bw >= 2 && lte_bw <= 5:
-                return (lte_bw - 1) * 5;
-              default:
-                return "未知";
-            }
-          },
-
-          calculate_nr_bw(nr_bw) {
-            switch (true) {
-              case nr_bw >= 0 && nr_bw <= 5:
-                return (nr_bw + 1) * 5;
-              case nr_bw >= 6 && nr_bw <= 12:
-                return (nr_bw - 2) * 10;
-              case nr_bw === 13:
-                return "200";
-              case nr_bw === 14:
-                return "400";
-              default:
-                return "未知";
-            }
-          },
-
-          calculateRSRPPercentage(rsrp) {
-            let RSRP_min = -135;
-            let RSRP_max = -65;
-
-            // If rsrp is null, return 0%
-            if (isNaN(rsrp) || rsrp < -140) {
-              return 0;
-            }
-
-            let percentage = ((rsrp - RSRP_min) / (RSRP_max - RSRP_min)) * 100;
-
-            if (percentage > 100) {
-              percentage = 100;
-            }
-
-            // if percentage is less than 15%, make it 15%
-            if (percentage < 15) {
-              percentage = 15;
-            }
-
-            return Math.round(percentage);
-          },
-
-          calculateRSRQPercentage(rsrq) {
-            let RSRQ_min = -20;
-            let RSRQ_max = -8;
-
-            // If rsrq is null, return 0%
-            if (isNaN(rsrq) || rsrq < -20) {
-              return 0;
-            }
-
-            let percentage = ((rsrq - RSRQ_min) / (RSRQ_max - RSRQ_min)) * 100;
-
-            if (percentage > 100) {
-              percentage = 100;
-            }
-
-            // if percentage is less than 15%, make it 15%
-            if (percentage < 15) {
-              percentage = 15;
-            }
-
-            return Math.round(percentage);
-          },
-
-          calculateSINRPercentage(sinr) {
-            let SINR_min = -10; // Changed from 0
-            let SINR_max = 35;
-
-            // If sinr is null, return 0%
-            if (isNaN(sinr) || sinr < -10) {
-              return 0;
-            }
-
-            let percentage = ((sinr - SINR_min) / (SINR_max - SINR_min)) * 100;
-
-            if (percentage > 100) {
-              percentage = 100;
-            }
-
-            // if percentage is less than 15%, make it 15%
-            if (percentage < 15) {
-              percentage = 15;
-            }
-
-            return Math.round(percentage);
-          },
-
-          // Calculate the overall signal assessment
-          calculateSignalPercentage(rsrpNRPercentage, sinrNRPercentage) {
-            // Get the average of the RSRP Percentage and SINR Percentage
-            let average = (rsrpNRPercentage + sinrNRPercentage) / 2;
-            return Math.round(average);
-          },
-
-          signalQuality(percentage) {
-            if (percentage >= 80) {
-              return "优秀";
-            } else if (percentage >= 60) {
-              return "良好";
-            } else if (percentage >= 40) {
-              return "一般";
-            } else if (percentage >= 0) {
-              return "差";
-            } else {
-              return "无信号";
-            }
-          },
-
-          fetchUpTime() {
-            // Content-Type: text/plain
-            //
-            // 1 hour 44, minute
-            fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
-              cfg: this.selectedCfg,
-              action: 'get_uptime',
-              translate: '1'
-            }))
-              .then((response) => response.json())
-              .then((data) => {
-                // Example result
-                // 01:17:02 up 3 days,  2:41,  load average: 0.65, 0.66, 0.60
-
-                // Look for xx days in the result
-                const days = data.result.match(/(\d+) day/);
-                // Do the same for hours
-                const hours = data.result.match(/(\d+) hour/);
-                // Do the same for minutes
-                const minutes = data.result.match(/(\d+) min/);
-                // 2:41
-                const hoursAndMinutes = data.result.match(/(\d+):(\d+),/);
-
-                if (hoursAndMinutes != null) {
-                  if (days != null) {
-                    if (days[1] === "1") {
-                      if (hoursAndMinutes[1] === "1") {
-                        this.uptime =
-                          days[1] +
-                          " day, " +
-                          hoursAndMinutes[1] +
-                          " hour " +
-                          hoursAndMinutes[2] +
-                          " minutes";
-                      } else if (hoursAndMinutes[2] === 1) {
-                        this.uptime =
-                          days[1] +
-                          " day, " +
-                          hoursAndMinutes[1] +
-                          " hours " +
-                          hoursAndMinutes[2] +
-                          " minute";
-                      } else {
-                        this.uptime =
-                          days[1] +
-                          " day, " +
-                          hoursAndMinutes[1] +
-                          " hours " +
-                          hoursAndMinutes[2] +
-                          " minutes";
-                      }
-                    } else {
-                      if (hoursAndMinutes[1] === "1") {
-                        this.uptime =
-                          days[1] +
-                          " days, " +
-                          hoursAndMinutes[1] +
-                          " hour " +
-                          hoursAndMinutes[2] +
-                          " minutes";
-                      } else if (hoursAndMinutes[2] === 1) {
-                        this.uptime =
-                          days[1] +
-                          " days, " +
-                          hoursAndMinutes[1] +
-                          " hours " +
-                          hoursAndMinutes[2] +
-                          " minute";
-                      } else {
-                        this.uptime =
-                          days[1] +
-                          " days, " +
-                          hoursAndMinutes[1] +
-                          " hours " +
-                          hoursAndMinutes[2] +
-                          " minutes";
-                      }
-                    }
-                  } else {
-                    if (hoursAndMinutes[1] === "1") {
-                      this.uptime =
-                        hoursAndMinutes[1] +
-                        " hour " +
-                        hoursAndMinutes[2] +
-                        " minutes";
-                    } else if (hoursAndMinutes[2] === 1) {
-                      this.uptime =
-                        hoursAndMinutes[1] +
-                        " hours " +
-                        hoursAndMinutes[2] +
-                        " minute";
-                    } else {
-                      this.uptime =
-                        hoursAndMinutes[1] +
-                        " hours " +
-                        hoursAndMinutes[2] +
-                        " minutes";
-                    }
-                  }
-                } else if (days != null) {
-                  if (hours != null) {
-                    if (days[1] === "1") {
-                      if (hours[1] === "1") {
-                        this.uptime = days[1] + " day, " + hours[1] + " hour";
-                      } else {
-                        this.uptime = days[1] + " day, " + hours[1] + " hours";
-                      }
-                    } else {
-                      if (hours[1] === "1") {
-                        this.uptime = days[1] + " days, " + hours[1] + " hour";
-                      } else {
-                        this.uptime = days[1] + " days, " + hours[1] + " hours";
-                      }
-                    }
-                  } else if (minutes != null) {
-                    if (days[1] === "1") {
-                      if (minutes[1] === "1") {
-                        this.uptime =
-                          days[1] + " day, " + minutes[1] + " minute";
-                      } else {
-                        this.uptime =
-                          days[1] + " day, " + minutes[1] + " minutes";
-                      }
-                    } else {
-                      if (minutes[1] === "1") {
-                        this.uptime =
-                          days[1] + " days, " + minutes[1] + " minute";
-                      } else {
-                        this.uptime =
-                          days[1] + " days, " + minutes[1] + " minutes";
-                      }
-                    }
-                  } else {
-                    if (days[1] === "1") {
-                      this.uptime = days[1] + " day";
-                    } else {
-                      this.uptime = days[1] + " days";
-                    }
-                  }
-                } else if (hours != null) {
-                  if (hours[1] === "1") {
-                    this.uptime = hours[1] + " hour";
-                  } else {
-                    this.uptime = hours[1] + " hours";
-                  }
-                } else if (minutes != null) {
-                  if (minutes[1] === "1") {
-                    this.uptime = minutes[1] + " minute";
-                  } else {
-                    this.uptime = minutes[1] + " minutes";
-                  }
-                } else {
-                  this.uptime = "未知时间";
-                }
-              });
-          },
-          parseData(data) {
-            // Reset or set defaults if needed
-            for (let entry of data) {
-              if (entry.key === 'temperature') {
-                this.temperature = entry.value.replace('°C', '');
-              } else if (entry.key === 'SIM Status') {
-                this.simStatus = entry.value === 'ready' ? '已激活' : '无SIM卡';
-              } else if (entry.key === 'SIM Slot') {
-                this.activeSim = 'SIM ' + entry.value;
-              } else if (entry.key === 'MMC') {
-                this.mccmnc = entry.value;
-              } else if (entry.key === 'MNC') {
-                this.mccmnc += entry.value;
-                
-                const mccmncMap = {
-                        "46000":"中国移动",
-                         "46001":"中国联通",  "46003":"中国电信",  "46009":"中国联通",
-                           "46011":"中国电信", "46015":"中国广电", "46020":"中国铁通"};
-                const mccmncNumber = Number(this.mccmnc);
-                this.networkProvider = mccmncMap[mccmncNumber] || "未知运营商";
-              } else if (entry.key === 'network_mode') {
-                this.networkMode = entry.value;
-              } else if (entry.key === 'Band') {
-                this.bands = entry.value;
-              } else if (entry.key === 'DL Bandwidth') {
-                this.dlbandwidth = entry.value;
-              } else if (entry.key === 'UL Bandwidth') {
-                this.ulbandwidth += ' / ' + entry.value;
-              } else if (entry.key === 'ARFCN') {
-                this.earfcns = entry.value;
-              } else if (entry.key === 'Physical Cell ID') {
-                this.pccPCI = entry.value;
-              } else if (entry.key === 'Cell ID') {
-                this.cellID = entry.value;
-              } else if (entry.key === 'TAC') {
-                this.tac = entry.value;
-              } else if (entry.key === 'RSRP') {
-                this.rsrpNR = entry.value;
-                this.rsrpNRPercentage = this.calculateRSRPPercentage(
-                  parseInt(this.rsrpNR)
-                );
-              } else if (entry.key === 'RSRQ') {
-                this.rsrqNR = entry.value;
-                this.rsrqNRPercentage = this.calculateRSRQPercentage(
-                  parseInt(this.rsrqNR)
-                );
-              } else if (entry.key === 'SINR') {
-                this.sinrNR = entry.value;
-                this.sinrNRPercentage = this.calculateSINRPercentage(
-                  parseInt(this.sinrNR)
-                );
+          return result || "0 分钟";
+        },
+        getProgressBarClass(percentage) {
+          percentage = parseInt(percentage);
+          if (percentage >= 60) return 'progress-bar bg-success';
+          else if (percentage >= 40) return 'progress-bar bg-warning';
+          else return 'progress-bar bg-danger';
+        },
+        getDataByClass(className) {
+          return this.dataItems.filter(item => item.class === className).map(item => {
+            const processedItem = { ...item };
+            if (processedItem.key) {
+              switch (processedItem.key) {
+                case 'ISP':
+                  processedItem.value = this.mapISPValue(processedItem.value);
+                  break;
+                default:
+                  break;
               }
             }
-            // Set signalAssessment based on signalPercentage
-            this.signalPercentage = this.calculateSignalPercentage(parseInt(this.rsrpNRPercentage), parseInt(this.sinrNRPercentage));
-            let perc = parseInt(this.signalPercentage);
-            if (perc >= 80) {
-              this.signalAssessment = '优秀';
-            } else if (perc >= 60) {
-              this.signalAssessment = '良好';
-            } else if (perc >= 40) {
-              this.signalAssessment = '一般';
-            } else {
-              this.signalAssessment = '差';
-            }
-          },
-          calculatePercentage(value, min, max) {
-            if (isNaN(value) || isNaN(min) || isNaN(max)) return 0;
-            let percentage = ((value - min) / (max - min)) * 100;
-            return Math.max(0, Math.min(100, Math.round(percentage)));
-          },
-          updateRefreshRate() {
-            if (this.newRefreshRate >= 3 && this.newRefreshRate <= 60) {
-              this.refreshRate = this.newRefreshRate;
-              this.newRefreshRate = null;
-              clearInterval(this.intervalId);
-              this.intervalId = setInterval(() => {
-                this.fetchAllInfo();
-              }, this.refreshRate * 1000);
-            }
-          },
-        };
-      }
-    </script>
-  </body>
+
+            return processedItem;
+          });
+        },
+
+        getProgressPercentage(item) {
+          if (item.type !== 'progress_bar' || !item.min_value || !item.max_value) {
+            return 0;
+          }
+
+          const value = parseFloat(item.value);
+          const minValue = parseFloat(item.min_value);
+          const maxValue = parseFloat(item.max_value);
+
+          if (isNaN(value) || isNaN(minValue) || isNaN(maxValue)) {
+            return 0;
+          }
+
+          let percentage = ((value - minValue) / (maxValue - minValue)) * 100;
+
+          // 限制在0-100范围内
+          if (percentage > 100) percentage = 100;
+          if (percentage < 0) percentage = 0;
+
+          return Math.round(percentage);
+        },
+        calculateSignalDisplay() {
+          // 计算信号强度用于顶部卡片显示
+          const signalItems = this.dataItems.filter(item =>
+            item.type === 'progress_bar' &&
+            (item.key.includes('RSRP') || item.key.includes('SINR'))
+          );
+
+          if (signalItems.length > 0) {
+            const percentages = signalItems.map(item => this.getProgressPercentage(item));
+            const average = percentages.reduce((sum, p) => sum + p, 0) / percentages.length;
+            this.signalPercentage = Math.round(average);
+          } else {
+            this.signalPercentage = 0;
+          }
+        }
+      };
+    }
+  </script>
+</body>
+
 </html>

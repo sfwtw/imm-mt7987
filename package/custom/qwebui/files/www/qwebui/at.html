@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-cn" data-bs-theme="light">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>模块管理 - AT终端</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/bootstrap.min.css" />
+  <link rel="simpleadmin-logo" href="favicon.ico" />
+  <script src="js/bootstrap.bundle.min.js"></script>
+  <script src="js/alpinejs.min.js" defer></script>
+</head>
+
+<body>
+  <main>
+    <div class="container my-4" x-data="simpleSettings()">
+      <!-- 初始加载指示器 -->
+      <div x-show="isInitialLoading" class="initial-loading-overlay">
+        <div class="initial-loading-content">
+          <div class="loading-spinner"></div>
+          <h4>初始化AT终端</h4>
+          <p>正在加载配置...</p>
+        </div>
+      </div>
+
+      <!-- 统一导航栏 -->
+      <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+          <a class="btn btn-outline-secondary me-3" href="/cgi-bin/luci/" title="返回OP主页">
+            <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+              <path fill="currentColor" d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 6L8 2.5 4.5 6 7 6v4h2V6h1.5z" />
+            </svg>
+            返回OP主页
+          </a>
+
+          <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="navbarText">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              <li class="nav-item">
+                <a class="nav-link" href="index.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor"
+                      d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293l6-6Z" />
+                  </svg>
+                  首页
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link active" href="at.html" aria-current="page">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor"
+                      d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783z" />
+                  </svg>
+                  AT
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="sms.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor"
+                      d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z" />
+                  </svg>
+                  短信
+                </a>
+              </li>
+            </ul>
+
+            <div class="d-flex align-items-center gap-3">
+              <button class="btn btn-link text-reset p-0" id="darkModeToggle" title="切换主题">
+                <svg width="20" height="20" viewBox="0 0 16 16">
+                  <path fill="currentColor"
+                    d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z" />
+                </svg>
+              </button>
+
+              <select id="modemSelector" class="form-select" x-model="selectedCfg" @change="changeCfg()"
+                style="min-width: 200px;">
+                <template x-for="cfg in cfgList" :key="cfg.value">
+                  <option :value="cfg.value" x-text="cfg.name"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <!-- AT终端主卡片 -->
+      <div class="row mb-4">
+        <div class="col">
+          <div class="card fade-in">
+            <div class="card-header">
+              <i class="bi bi-terminal me-2"></i>AT 终端
+              <span x-show="currentAtPort" class="badge bg-secondary ms-2" x-text="'端口: ' + currentAtPort"></span>
+            </div>
+            <div class="card-body">
+              <div class="mb-4">
+                <textarea class="form-control at-terminal" placeholder="AT命令输出将显示在这里..." id="atOutputBox"
+                  style="height: 250px" x-text="atCommandResponse" readonly>
+                  </textarea>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <label for="atCommandInput" class="form-label">AT 命令</label>
+                  <input type="text" class="form-control" id="atCommandInput" placeholder="输入AT命令，如: ATI"
+                    x-model="atcmd" @keydown.enter="sendATCommand()" :disabled="isLoading" />
+                  <div class="form-text">按回车键或点击提交按钮执行命令</div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                  <div class="d-grid gap-2 d-md-flex w-100">
+                    <button class="btn btn-primary flex-fill" type="button" @click="sendATCommand()"
+                      :disabled="isLoading || !selectedCfg">
+                      <span x-show="!isLoading">
+                        <i class="bi bi-send me-1"></i>提交
+                      </span>
+                      <span x-show="isLoading">
+                        <div class="loading-spinner me-1"></div>执行中...
+                      </span>
+                    </button>
+                    <button class="btn btn-outline-danger" type="button" @click="clearResponses()" :disabled="isClean">
+                      <i class="bi bi-trash me-1"></i>清除
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快捷AT命令卡片 -->
+      <div class="row mb-4">
+        <div class="col">
+          <div class="card fade-in">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-lightning me-2"></i>快捷AT命令</span>
+              <button class="btn btn-outline-secondary btn-sm" type="button" @click="loadQuickCommands()"
+                :disabled="isLoadingQuickCommands">
+                <span x-show="!isLoadingQuickCommands"><i class="bi bi-arrow-clockwise me-1"></i>刷新</span>
+                <span x-show="isLoadingQuickCommands">
+                  <div class="loading-spinner me-1"></div>加载中
+                </span>
+              </button>
+            </div>
+            <div class="card-body">
+              <!-- 加载状态 -->
+              <div x-show="isLoadingQuickCommands" class="text-center py-4">
+                <div class="loading-spinner mb-2"></div>
+                <p class="text-muted mb-0">正在加载快捷命令...</p>
+              </div>
+
+              <!-- 无命令状态 -->
+              <div x-show="!isLoadingQuickCommands && quickCommands.length === 0" class="text-center py-4">
+                <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+                <p class="text-muted mb-0 mt-2">暂无可用的快捷命令</p>
+              </div>
+
+              <!-- 命令列表 -->
+              <div x-show="!isLoadingQuickCommands && quickCommands.length > 0" class="row g-2">
+                <template x-for="cmd in quickCommands" :key="cmd.value">
+                  <div class="col-md-6 col-lg-4">
+                    <button class="btn btn-outline-primary quick-command-btn w-100" type="button"
+                      @click="executeQuickCommand(cmd.value)" :disabled="isLoading">
+                      <small x-text="cmd.name" class="d-block text-start"></small>
+                    </button>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ...existing modals... -->
+    </div>
+  </main>
+
+  <script src="js/dark-mode.js"></script>
+  <script>
+    function simpleSettings() {
+      return {
+        isLoading: false,
+        isInitialLoading: true,
+        showSuccess: false,
+        showError: false,
+        isClean: true,
+        showModal: false,
+        isRebooting: false,
+        atcmd: "",
+        countdown: 0,
+        atCommandResponse: "",
+        cfgList: [],
+        selectedCfg: null,
+        currentAtPort: "",
+        quickCommands: [],
+        isLoadingQuickCommands: false,
+
+        init() {
+          console.log('初始化AT终端...');
+          this.updateCfgList();
+        },
+
+        updateCfgList() {
+          fetch('/cgi-bin/luci/admin/modem/qmodem/get_modem_cfg')
+            .then(response => {
+              if (response.status === 403) {
+                window.location.href = '/cgi-bin/luci/admin/modem/qwebui';
+                return;
+              }
+              return response.json();
+            })
+            .then(data => {
+              if (!data) return;
+              this.cfgList = data.cfgs.map(cfg => ({
+                value: cfg.cfg,
+                name: cfg.name,
+                at_port: cfg.at_port
+              }));
+              if (this.cfgList.length > 0) {
+                if (!this.selectedCfg) {
+                  this.selectedCfg = this.cfgList[0].value;
+                }
+                this.changeCfg();
+              } else {
+                this.showNotification("未找到调制解调器配置，请检查设备连接。", "warning");
+                this.cfgList = [{ value: '', name: '无可用配置', at_port: '' }];
+                this.selectedCfg = '';
+              }
+            })
+            .catch(error => {
+              console.error('Error fetching cfg list:', error);
+              this.showNotification("获取调制解调器配置失败，请检查网络或设备。", "danger");
+            })
+            .finally(() => {
+              this.isInitialLoading = false;
+            });
+        },
+
+        changeCfg() {
+          const selectedConfig = this.cfgList.find(cfg => cfg.value === this.selectedCfg);
+          if (selectedConfig && selectedConfig.at_port) {
+            this.currentAtPort = selectedConfig.at_port;
+          }
+          console.log('Selected cfg:', this.selectedCfg, 'AT Port:', this.currentAtPort);
+
+          // 延迟加载快捷命令
+          if (this.selectedCfg) {
+            setTimeout(() => {
+              this.loadQuickCommands();
+            }, 300);
+          }
+        },
+
+        sendATCommand() {
+          if (!this.atcmd) {
+            this.atcmd = "ATI";
+          }
+
+          this.isLoading = true;
+          const sendatcmd = "'" + this.atcmd + "'";
+          const params = JSON.stringify({
+            at: sendatcmd,
+            port: this.currentAtPort
+          });
+
+          const encodedParams = encodeURIComponent(JSON.stringify(params));
+          const url = `/cgi-bin/luci/admin/modem/qmodem/modem_ctrl?cfg=${this.selectedCfg}&action=send_at&params=${encodedParams}`;
+
+          fetch(url)
+            .then((res) => {
+              if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+              }
+              return res.json();
+            })
+            .then((data) => {
+              if (data.at_cfg && data.at_cfg.res) {
+                this.atCommandResponse = data.at_cfg.res;
+              } else {
+                this.atCommandResponse = JSON.stringify(data, null, 2);
+              }
+              this.isClean = false;
+            })
+            .catch((error) => {
+              console.error("Error: ", error);
+              this.atCommandResponse = "错误: " + error.message;
+              this.showNotification("AT命令执行失败: " + error.message, "danger");
+            })
+            .finally(() => {
+              this.isLoading = false;
+            });
+        },
+
+        clearResponses() {
+          this.atCommandResponse = "";
+          this.isClean = true;
+        },
+
+        loadQuickCommands() {
+          if (!this.selectedCfg) return;
+
+          this.isLoadingQuickCommands = true;
+          const url = `/cgi-bin/luci/admin/modem/qmodem/modem_ctrl?cfg=${this.selectedCfg}&action=get_at_cfg`;
+
+          fetch(url)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              return response.json();
+            })
+            .then(data => {
+              if (data.at_cfg && data.at_cfg.cmds) {
+                this.quickCommands = data.at_cfg.cmds;
+                if (data.at_cfg.using_port) {
+                  this.currentAtPort = data.at_cfg.using_port;
+                }
+              } else {
+                this.quickCommands = [];
+              }
+            })
+            .catch(error => {
+              console.error('Error fetching quick commands:', error);
+              this.showNotification("获取快捷命令失败，请检查网络或设备。", "danger");
+              this.quickCommands = [];
+            })
+            .finally(() => {
+              this.isLoadingQuickCommands = false;
+            });
+        },
+
+        executeQuickCommand(command) {
+          this.atcmd = command;
+          this.sendATCommand();
+        },
+
+        showNotification(message, type = 'info') {
+          console.log(`[${type.toUpperCase()}] ${message}`);
+
+          // 创建右上角通知容器（如不存在则创建）
+          let container = document.getElementById('notification-container');
+          if (!container) {
+            container = document.createElement('div');
+            container.id = 'notification-container';
+            container.style.position = 'fixed';
+            container.style.top = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            container.style.maxWidth = '350px';
+            container.style.pointerEvents = 'none';
+            document.body.appendChild(container);
+          }
+
+          const notification = document.createElement('div');
+          notification.className = `alert alert-${type === 'danger' ? 'danger' : type === 'warning' ? 'warning' : 'success'} notification`;
+          notification.style.marginBottom = '10px';
+          notification.style.pointerEvents = 'auto';
+          notification.innerHTML = `
+            <div class="d-flex align-items-center">
+              <span>${message}</span>
+              <button type="button" class="btn-close ms-auto" aria-label="Close"></button>
+            </div>
+          `;
+
+          container.appendChild(notification);
+
+          notification.querySelector('.btn-close').addEventListener('click', () => {
+            notification.remove();
+          });
+
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.remove();
+            }
+          }, 5000);
+        }
+      };
+    }
+  </script>
+</body>
+
+</html>
