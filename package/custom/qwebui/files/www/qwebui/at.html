@@ -4,10 +4,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>模块管理 - AT终端</title>
+  <title>QWebui - AT终端</title>
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/bootstrap.min.css" />
-  <link rel="simpleadmin-logo" href="favicon.ico" />
   <script src="js/bootstrap.bundle.min.js"></script>
   <script src="js/alpinejs.min.js" defer></script>
 </head>
@@ -27,12 +26,13 @@
       <!-- 统一导航栏 -->
       <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
-          <a class="btn btn-outline-secondary me-3" href="/cgi-bin/luci/" title="返回OP主页">
-            <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
-              <path fill="currentColor" d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 6L8 2.5 4.5 6 7 6v4h2V6h1.5z" />
+          <a class="btn btn-outline-secondary me-3 back-btn-icon" href="/cgi-bin/luci/">
+            <svg width="20" height="20" viewBox="0 0 16 16">
+              <path fill="currentColor" d="M15 8a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 0 1-.708.708l-4-4a.498.498 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 7.5H14.5A.5.5 0 0 1 15 8"/>
             </svg>
-            返回OP主页
           </a>
+
+          <span class="navbar-brand d-lg-none fw-bold mb-0">QWebui</span>
 
           <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText">
             <span class="navbar-toggler-icon"></span>
@@ -261,7 +261,7 @@
           }
 
           this.isLoading = true;
-          const sendatcmd = "'" + this.atcmd + "'";
+          const sendatcmd = this.atcmd.replace(/^'|'$/g, '');
           const params = JSON.stringify({
             at: sendatcmd,
             port: this.currentAtPort

@@ -28,14 +28,11 @@ uci batch <<-EOF
 	commit wireless
 EOF
 
-source /lib/smp_affinity
-set_affinity 'mt7992-wed' 1
-
 sed -i '/\/bin\/login -f root/!s|/bin/login|/bin/login -f root|' /etc/config/ttyd && /etc/init.d/ttyd reload
 
 rm -rf /tmp/luci-modulecache/
 rm -f /tmp/luci-indexcache
 
 sed -i '/OPENWRT_RELEASE/d' /usr/lib/os-release
-echo "OPENWRT_RELEASE='ImmortalWrt (with 237 Full HNAT) / R25.9.20'" >> /usr/lib/os-release
+echo "OPENWRT_RELEASE='ImmortalWrt (with 237 Full HNAT) / R25.9.25'" >> /usr/lib/os-release
 exit 0
