@@ -493,6 +493,17 @@
   color: #adb5bd;
 }
 
+/* 载波badge样式 */
+.carrier-badge {
+  background-color: #495057;
+  color: white;
+}
+
+[data-bs-theme="dark"] .carrier-badge {
+  background-color: #6c757d;
+  color: white;
+}
+
 /* 响应式设计 */
 @media (max-width: 1200px) {
   .nav-link {

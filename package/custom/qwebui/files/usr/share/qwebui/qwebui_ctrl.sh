@@ -16,8 +16,7 @@ get_uptime(){
 get_ping(){
     ping_result_ip=$(ping -c 1 8.8.8.8 2>&1)
     ping_result_baidu=$(ping -c 1 baidu.com 2>&1)
-    
-    # 检查两个ping是否都成功
+
     if echo "$ping_result_ip" | grep -q "packets received" && echo "$ping_result_ip" | grep -q "0% packet loss" && \
        echo "$ping_result_baidu" | grep -q "packets received" && echo "$ping_result_baidu" | grep -q "0% packet loss"; then
         json_add_string result "both_success"
@@ -29,7 +28,7 @@ get_ping(){
         json_add_string result "failed"
         json_add_string status "disconnected"
     fi
-    
+
     json_add_string ip_ping "$ping_result_ip"
     json_add_string baidu_ping "$ping_result_baidu"
 }

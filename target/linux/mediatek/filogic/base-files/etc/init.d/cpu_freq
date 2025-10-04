@@ -5,6 +5,4 @@ START=99
 
 boot() {
 	echo "$(mhz -c)MHz" > /tmp/mtk_cpu_freq
-	source /lib/smp_affinity
-	set_affinity 'mt7992-wed' 1
 }

@@ -59,6 +59,15 @@
                 </a>
               </li>
               <li class="nav-item">
+                <a class="nav-link fw-semibold" href="network.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor" d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                    <path fill="currentColor" d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                  </svg>
+                  网络
+                </a>
+              </li>
+              <li class="nav-item">
                 <a class="nav-link" href="sms.html">
                   <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
                     <path fill="currentColor"
@@ -129,6 +138,8 @@
                 <template x-if="networkProvider === '中国电信'">
                   <img src="file/ct.png" alt="中国电信" class="carrier-logo">
                 </template>
+                <!-- 如果不是有图的运营商，直接显示文本 -->
+                <span x-show="networkProvider !== '未知运营商' && networkProvider !== '中国移动' && networkProvider !== '中国联通' && networkProvider !== '中国电信'" x-text="networkProvider"></span>
               </div>
             </div>
           </div>
@@ -280,9 +291,74 @@
           <div class="card fade-in" x-show="getDataByClass('基站信息').length > 0">
             <div class="card-header">
               <i class="bi bi-broadcast me-2"></i>基站信息
+              <button @click="showCards = !showCards" class="btn btn-sm btn-outline-secondary float-end">♻</button>
             </div>
             <div class="card-body p-0">
-              <div class="table-responsive">
+              <!-- 卡片显示模式 -->
+              <div x-show="showCards">
+                <div x-show="getBaseStationCards().length > 0" class="p-3">
+                  <div class="d-flex overflow-auto pb-2" style="white-space: nowrap;">
+                    <template x-for="(card, index) in getBaseStationCards()" :key="card.pci">
+                      <div class="card me-3" style="min-width: 250px; flex-shrink: 0;">
+                        <div class="card-body">
+                          <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="card-title mb-0" x-text="'PCI: ' + card.pci"></h6>
+                            <span class="badge carrier-badge" x-text="index === 0 ? '主载波' : '副载波' + index"></span>
+                          </div>
+                          <div class="row">
+                            <div class="col-6">
+                              <small class="text-muted">ARFCN</small><br>
+                              <span x-text="card.arfcn"></span>
+                            </div>
+                            <div class="col-6">
+                              <small class="text-muted">Band</small><br>
+                              <span x-text="card.band"></span>
+                            </div>
+                            <div class="col-6">
+                              <small class="text-muted">DL Bandwidth</small><br>
+                              <span x-text="card.dl"></span>
+                            </div>
+                            <div class="col-6">
+                              <small class="text-muted">UL Bandwidth</small><br>
+                              <span x-text="card.ul"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+                <div class="table-responsive" x-show="filteredBaseStationItems().length > 0">
+                  <table class="table table-hover mb-0">
+                    <tbody>
+                      <template x-for="item in filteredBaseStationItems()" :key="item.key">
+                        <tr>
+                          <th scope="row" class="col-name" x-text="item.full_name || item.key"></th>
+                          <td class="col-content">
+                            <!-- 进度条显示 -->
+                            <div x-show="item.type === 'progress_bar'" class="progress-container">
+                              <div class="progress" style="height: 24px;">
+                                <div :class="getProgressBarClass(getProgressPercentage(item))"
+                                  :style="'width: ' + Math.max(getProgressPercentage(item), 8) + '%'"
+                                  :aria-valuenow="getProgressPercentage(item)" aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                              </div>
+                              <div class="progress-value-overlay"
+                                x-text="item.value + (item.unit ? ' ' + item.unit : '') + ' (' + getProgressPercentage(item) + '%)'">
+                              </div>
+                            </div>
+                            <!-- 普通文本显示 -->
+                            <span x-show="item.type === 'plain_text'" class="fw-semibold"
+                              x-text="item.value + (item.unit ? ' ' + item.unit : '')"></span>
+                          </td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <!-- 表格显示模式 -->
+              <div x-show="!showCards" class="table-responsive">
                 <table class="table table-hover mb-0">
                   <tbody>
                     <template x-for="item in getDataByClass('基站信息')" :key="item.key">
@@ -324,37 +400,8 @@
         internetConnectionStatus: "已断开",
         temperature: "0",
         simStatus: "无SIM卡",
-        activeSim: "无SIM卡",
         networkProvider: "未知运营商",
-        mccmnc: "00000",
-        apn: "未知",
-        networkMode: "已断开",
-        bands: "未知",
-        dlbandwidth: "未知",
-        ulbandwidth: "未知",
-        earfcns: "000",
-        pccPCI: "0",
-        sccPCI: "-",
-        ipv4: "000.000.000.000",
-        ipv6: "0000:0000:0000:0000:0000:0000:0000:0000",
-        cellID: "未知",
-        eNBID: "未知",
-        tac: "未知",
-        csq: "-",
-        rsrpLTE: "-",
-        rsrpNR: "-",
-        rsrpLTEPercentage: "0%",
-        rsrpNRPercentage: "0%",
-        rsrqLTE: "-",
-        rsrqNR: "-",
-        rsrqLTEPercentage: "0%",
-        rsrqNRPercentage: "0%",
-        sinrLTE: "-",
-        sinrNR: "-",
-        sinrLTEPercentage: "0%",
-        sinrNRPercentage: "0%",
         signalPercentage: "0",
-        signalAssessment: "未知",
         uptime: "Unknown",
         modem_uptime: "Unknown",
         lastUpdate: new Date().toLocaleString(),
@@ -365,11 +412,11 @@
         cfgList: [],
         selectedCfg: null,
         intervalId: null,
-        dataItems: [], // 存储动态数据项
+        dataItems: [],
         isLoading: false,
         isInitialLoading: true,
+        showCards: true,
         init() {
-          console.log('初始化模块管理系统...');
           const savedRate = localStorage.getItem('refreshRate');
           if (savedRate) {
             this.refreshRate = parseInt(savedRate);
@@ -380,11 +427,8 @@
           this.updateCfgList();
         },
         updateCfgList() {
-          console.log('正在获取配置列表...');
-
           fetch('/cgi-bin/luci/admin/modem/qmodem/get_modem_cfg')
             .then(response => {
-              console.log('配置请求状态:', response.status);
               if (response.status === 403) {
                 window.location.href = '/cgi-bin/luci/admin/modem/qwebui';
                 return;
@@ -392,30 +436,20 @@
               return response.json();
             })
             .then(data => {
-              console.log('获取到配置数据:', data);
-              if (!data) {
-                console.error('配置数据为空');
-                return;
-              }
-
+              if (!data) return;
               this.cfgList = data.cfgs.map(cfg => ({ value: cfg.cfg, name: cfg.name }));
-              console.log('处理后的配置列表:', this.cfgList);
-
               if (this.cfgList.length > 0) {
                 if (!this.selectedCfg) {
                   this.selectedCfg = this.cfgList[0].value;
                 }
-                console.log('选中配置:', this.selectedCfg);
                 this.changeCfg();
               } else {
-                console.warn('未找到可用配置');
                 this.showNotification("未找到调制解调器配置，请检查设备连接。", "warning");
                 this.cfgList = [{ value: '', name: '无可用配置' }];
                 this.selectedCfg = '';
               }
             })
             .catch(error => {
-              console.error('获取配置列表失败:', error);
               this.showNotification("获取调制解调器配置失败，请检查网络或设备。", "danger");
             })
             .finally(() => {
@@ -424,44 +458,28 @@
         },
         changeCfg() {
           if (!this.selectedCfg) {
-            console.warn('未选择配置，跳过数据获取');
             this.isLoading = false;
             return;
           }
-
-          console.log('切换到配置:', this.selectedCfg);
           this.fetchAllInfo();
-
           clearInterval(this.intervalId);
           this.intervalId = setInterval(() => {
             this.fetchAllInfo();
           }, this.refreshRate * 1000);
         },
         fetchAllInfo() {
-          if (!this.selectedCfg) {
-            console.warn('配置未选择，跳过数据获取');
-            return;
-          }
-
-          console.log('开始获取所有信息...');
-          // 不是初始加载时才显示小的加载状态
+          if (!this.selectedCfg) return;
           if (!this.isInitialLoading) {
             this.isLoading = true;
           }
-
           const promises = [
-            this.fetchIPs(),
             this.fetchModemInfo(),
             this.fetchUpTime(),
             this.fetchPingStatus(),
             this.fetchTrafficStats()
           ];
-
           Promise.allSettled(promises)
             .then(results => {
-              console.log('所有请求完成，结果:', results);
-
-              // 检查是否有请求失败
               const failures = results.filter(result => result.status === 'rejected');
               if (failures.length > 0) {
                 console.warn('部分请求失败:', failures);
@@ -470,26 +488,19 @@
             .finally(() => {
               this.isLoading = false;
               this.lastUpdate = new Date().toLocaleString();
-              console.log('数据更新完成:', this.lastUpdate);
             });
         },
         fetchModemInfo() {
-          console.log('获取调制解调器信息...');
           return fetch('/cgi-bin/luci/admin/modem/qmodem/modem_ctrl?' + new URLSearchParams({
             cfg: this.selectedCfg,
             action: 'info',
             translate: '1'
           }))
-            .then(response => {
-              console.log('调制解调器信息响应状态:', response.status);
-              return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-              console.log('调制解调器信息数据:', data);
               this.parseData(data);
             })
             .catch(error => {
-              console.error('获取调制解调器信息失败:', error);
               throw error;
             });
         },
@@ -498,8 +509,8 @@
             cfg: this.selectedCfg,
             action: 'get_ping'
           }))
-            .then((response) => response.json())
-            .then((data) => {
+            .then(response => response.json())
+            .then(data => {
               if (data.status === "connected") {
                 this.internetConnectionStatus = "已连接";
               } else if (data.status === "dns_blocked") {
@@ -508,8 +519,7 @@
                 this.internetConnectionStatus = "已断开";
               }
             })
-            .catch((error) => {
-              console.error("Error:", error);
+            .catch(error => {
               this.internetConnectionStatus = "已断开";
             });
         },
@@ -526,9 +536,6 @@
             .catch(error => console.error('Error fetching traffic:', error));
         },
         showNotification(message, type = 'info') {
-          console.log(`[${type.toUpperCase()}] ${message}`);
-
-          // 创建右上角通知容器（如不存在则创建）
           let container = document.getElementById('notification-container');
           if (!container) {
             container = document.createElement('div');
@@ -541,7 +548,6 @@
             container.style.pointerEvents = 'none';
             document.body.appendChild(container);
           }
-
           const notification = document.createElement('div');
           notification.className = `alert alert-${type === 'danger' ? 'danger' : type === 'warning' ? 'warning' : 'success'} notification`;
           notification.style.marginBottom = '10px';
@@ -552,13 +558,10 @@
               <button type="button" class="btn-close ms-auto" aria-label="Close"></button>
             </div>
           `;
-
           container.appendChild(notification);
-
           notification.querySelector('.btn-close').addEventListener('click', () => {
             notification.remove();
           });
-
           setTimeout(() => {
             if (notification.parentNode) {
               notification.remove();
@@ -571,52 +574,19 @@
           const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
           return Math.round(bytes / Math.pow(1024, i), 2) + " " + sizes[i];
         },
-        calculateRSRPPercentage(rsrp) {
-          let RSRP_min = -135;
-          let RSRP_max = -65;
-          if (isNaN(rsrp) || rsrp < -140) return 0;
-          let percentage = ((rsrp - RSRP_min) / (RSRP_max - RSRP_min)) * 100;
-          if (percentage > 100) percentage = 100;
-          if (percentage < 15) percentage = 15;
-          return Math.round(percentage);
-        },
-        calculateRSRQPercentage(rsrq) {
-          let RSRQ_min = -20;
-          let RSRQ_max = -8;
-          if (isNaN(rsrq) || rsrq < -20) return 0;
-          let percentage = ((rsrq - RSRQ_min) / (RSRQ_max - RSRQ_min)) * 100;
-          if (percentage > 100) percentage = 100;
-          if (percentage < 15) percentage = 15;
-          return Math.round(percentage);
-        },
-        calculateSINRPercentage(sinr) {
-          let SINR_min = -10;
-          let SINR_max = 35;
-          if (isNaN(sinr)) return 0;
-          let percentage = ((sinr - SINR_min) / (SINR_max - SINR_min)) * 100;
-          if (percentage > 100) percentage = 100;
-          if (percentage < 15) percentage = 15;
-          return Math.round(percentage);
-        },
-        calculateSignalPercentage(rsrpNRPercentage, sinrNRPercentage) {
-          let average = (rsrpNRPercentage + sinrNRPercentage) / 2;
-          return Math.round(average);
-        },
         fetchUpTime() {
           return fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
             cfg: this.selectedCfg,
             action: 'get_uptime'
           }))
-            .then((response) => response.json())
-            .then((data) => {
+            .then(response => response.json())
+            .then(data => {
               if (data.uptime) {
                 const networkUptimeSeconds = parseInt(data.uptime);
                 this.uptime = this.formatUptime(networkUptimeSeconds);
               } else {
                 this.uptime = "未知";
               }
-
-              // 处理模块在线时间
               if (data.network_uptime) {
                 const networkUptimeSeconds = parseInt(data.network_uptime);
                 this.modem_uptime = this.formatUptime(networkUptimeSeconds);
@@ -625,28 +595,19 @@
               }
             })
             .catch(error => {
-              console.error('Error fetching uptime:', error);
               this.uptime = "获取失败";
               this.modem_uptime = "获取失败";
             });
         },
         parseData(data) {
-          // 存储完整的数据项
           this.dataItems = data.filter(item => {
-            // 过滤掉无效值
             const defaultValues = ['未知', 'N/A', '未知运营商', '未知时间', '-', '0', '000', '00000',
               '000.000.000.000', '0000:0000:0000:0000:0000:0000:0000:0000',
               'Unknown', '已断开', '无SIM卡', '', null, undefined];
-
             return item.value && !defaultValues.includes(item.value.toString().trim());
           });
-
-          // 保持原有的特殊字段处理用于顶部卡片显示
-          let previousType = this.networkType;
           for (let entry of data) {
-            if (entry.key === 'Network Type') {
-              this.networkType = entry.value;
-            } else if (entry.key === 'temperature') {
+            if (entry.key === 'temperature') {
               this.temperature = entry.value.replace('°C', '');
             } else if (entry.key === 'SIM Status') {
               this.simStatus = entry.value === 'ready' ? '已激活' : '无SIM卡';
@@ -654,13 +615,11 @@
               this.networkProvider = this.mapISPValue(entry.value);
             }
           }
-
-          // 计算信号强度百分比用于顶部显示
           this.calculateSignalDisplay();
         },
         mapISPValue(val) {
           switch ((val || '').trim()) {
-            case '\n4E2D56FD8054901A':
+            case '4E2D56FD8054901A':
             case 'CHN-CU':
             case '46001':
               return '中国联通';
@@ -677,36 +636,18 @@
         updateRefreshRate() {
           if (this.newRefreshRate >= 3 && this.newRefreshRate <= 60) {
             this.refreshRate = this.newRefreshRate;
-            localStorage.setItem('refreshRate', this.refreshRate); // 保存到本地
+            localStorage.setItem('refreshRate', this.refreshRate);
             clearInterval(this.intervalId);
             this.intervalId = setInterval(() => {
               this.fetchAllInfo();
             }, this.refreshRate * 1000);
           }
         },
-        fetchIPs() {
-          if (!this.selectedCfg) return Promise.resolve();
-          return fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
-            cfg: this.selectedCfg,
-            action: 'get_ip',
-            translate: '1'
-          }))
-            .then(response => response.json())
-            .then(data => {
-              if (data.result) {
-                this.ipv4 = data.ipv4 || this.ipv4;
-                this.ipv6 = data.ipv6 || this.ipv6;
-              }
-            })
-            .catch(error => console.error('Error fetching IPs:', error));
-        },
         formatUptime(seconds) {
           if (isNaN(seconds) || seconds < 0) return "未知时间";
-
           const days = Math.floor(seconds / 86400);
           const hours = Math.floor((seconds % 86400) / 3600);
           const minutes = Math.floor((seconds % 3600) / 60);
-
           let result = "";
           if (days > 0) {
             result += days + (days === 1 ? " 天" : " 天");
@@ -719,7 +660,6 @@
             if (result) result += " ";
             result += minutes + (minutes === 1 ? " 分钟" : " 分钟");
           }
-
           return result || "0 分钟";
         },
         getProgressBarClass(percentage) {
@@ -731,48 +671,71 @@
         getDataByClass(className) {
           return this.dataItems.filter(item => item.class === className).map(item => {
             const processedItem = { ...item };
-            if (processedItem.key) {
-              switch (processedItem.key) {
-                case 'ISP':
-                  processedItem.value = this.mapISPValue(processedItem.value);
-                  break;
-                default:
-                  break;
-              }
+            if (processedItem.key === 'ISP') {
+              processedItem.value = this.mapISPValue(processedItem.value);
             }
-
             return processedItem;
           });
         },
-
+        filteredBaseStationItems() {
+          const excludeKeys = ['ARFCN', 'Physical Cell ID', 'Band', 'DL Bandwidth', 'UL Bandwidth'];
+          let items = this.getDataByClass('基站信息').filter(item => !excludeKeys.includes(item.key)).sort((a, b) => {
+            if (a.type === 'progress_bar' && b.type !== 'progress_bar') return -1;
+            if (a.type !== 'progress_bar' && b.type === 'progress_bar') return 1;
+            return 0;
+          });
+          if (this.showCards) {
+            items = items.filter(item => item.type === 'progress_bar');
+          }
+          return items;
+        },
+        getBaseStationCards() {
+          const baseStationItems = this.dataItems.filter(item => item.class === '基站信息');
+          const keys = ['ARFCN', 'Physical Cell ID', 'Band', 'DL Bandwidth', 'UL Bandwidth'];
+          const values = {};
+          keys.forEach(key => {
+            const item = baseStationItems.find(item => item.key === key);
+            values[key] = item ? item.value : '';
+          });
+          const pciValues = values['Physical Cell ID'] ? values['Physical Cell ID'].split(' / ').map(v => v.trim()) : [];
+          const numCards = pciValues.length;
+          const cards = [];
+          for (let i = 0; i < numCards; i++) {
+            cards.push({
+              arfcn: this.getSplitValue(values['ARFCN'], i),
+              pci: pciValues[i] || '-',
+              band: this.getSplitValue(values['Band'], i),
+              dl: this.getSplitValue(values['DL Bandwidth'], i),
+              ul: this.getSplitValue(values['UL Bandwidth'], i)
+            });
+          }
+          return cards;
+        },
+        getSplitValue(value, index) {
+          if (!value) return '-';
+          const parts = value.split(' / ').map(v => v.trim());
+          return parts[index] || '-';
+        },
         getProgressPercentage(item) {
           if (item.type !== 'progress_bar' || !item.min_value || !item.max_value) {
             return 0;
           }
-
           const value = parseFloat(item.value);
           const minValue = parseFloat(item.min_value);
           const maxValue = parseFloat(item.max_value);
-
           if (isNaN(value) || isNaN(minValue) || isNaN(maxValue)) {
             return 0;
           }
-
           let percentage = ((value - minValue) / (maxValue - minValue)) * 100;
-
-          // 限制在0-100范围内
           if (percentage > 100) percentage = 100;
           if (percentage < 0) percentage = 0;
-
           return Math.round(percentage);
         },
         calculateSignalDisplay() {
-          // 计算信号强度用于顶部卡片显示
           const signalItems = this.dataItems.filter(item =>
             item.type === 'progress_bar' &&
             (item.key.includes('RSRP') || item.key.includes('SINR'))
           );
-
           if (signalItems.length > 0) {
             const percentages = signalItems.map(item => this.getProgressPercentage(item));
             const average = percentages.reduce((sum, p) => sum + p, 0) / percentages.length;

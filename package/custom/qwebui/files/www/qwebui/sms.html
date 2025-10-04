@@ -59,6 +59,15 @@
                 </a>
               </li>
               <li class="nav-item">
+                <a class="nav-link fw-semibold" href="network.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor" d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                    <path fill="currentColor" d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                  </svg>
+                  网络
+                </a>
+              </li>
+              <li class="nav-item">
                 <a class="nav-link active" href="sms.html" aria-current="page">
                   <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
                     <path fill="currentColor"
@@ -412,22 +421,41 @@
               let newSenders = [];
               let newDates = [];
               let newMessageIndices = [];
-              const grouped = {};
-              data.msg.forEach(item => {
-                if (!grouped[item.reference]) grouped[item.reference] = [];
-                grouped[item.reference].push(item);
-              });
-              Object.values(grouped).forEach(group => {
-                group.sort((a, b) => a.part - b.part);
-                const text = group.map(p => p.content).join('');
-                const sender = group[0].sender;
-                const date = new Date(group[0].timestamp * 1000);
-                const indices = group.map(p => p.index);
-                newMessages.push({ text, sender, date, indices });
-                newSenders.push(sender);
-                newDates.push(this.formatDate(date));
-                newMessageIndices.push(indices);
-              });
+              if (data.msg && data.msg.length > 0) {
+                // 检查是否有reference字段
+                const hasReference = data.msg.some(item => item.reference !== undefined);
+                if (hasReference) {
+                  // 按reference分组（多部分短信）
+                  const grouped = {};
+                  data.msg.forEach(item => {
+                    if (!grouped[item.reference]) grouped[item.reference] = [];
+                    grouped[item.reference].push(item);
+                  });
+                  Object.values(grouped).forEach(group => {
+                    group.sort((a, b) => a.part - b.part);
+                    const text = group.map(p => p.content).join('');
+                    const sender = group[0].sender;
+                    const date = new Date(group[0].timestamp * 1000);
+                    const indices = group.map(p => p.index);
+                    newMessages.push({ text, sender, date, indices });
+                    newSenders.push(sender);
+                    newDates.push(this.formatDate(date));
+                    newMessageIndices.push(indices);
+                  });
+                } else {
+                  // 没有reference，直接处理每条短信
+                  data.msg.forEach(item => {
+                    const text = item.content;
+                    const sender = item.sender;
+                    const date = new Date(item.timestamp * 1000);
+                    const indices = [item.index];
+                    newMessages.push({ text, sender, date, indices });
+                    newSenders.push(sender);
+                    newDates.push(this.formatDate(date));
+                    newMessageIndices.push(indices);
+                  });
+                }
+              }
               // 判断是否有变化
               const isChanged = JSON.stringify(newMessages) !== JSON.stringify(this.messages);
               if (isChanged) {
