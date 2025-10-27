@@ -146,6 +146,20 @@ define U-Boot/nanopi-r4se-rk3399
     friendlyarm_nanopi-r4se
 endef
 
+define U-Boot/rock-4c-plus-rk3399
+  $(U-Boot/rk3399/Default)
+  NAME:=ROCK 4C+
+  BUILD_DEVICES:= \
+    radxa_rock-4c-plus
+endef
+
+define U-Boot/rock-4se-rk3399
+  $(U-Boot/rk3399/Default)
+  NAME:=ROCK 4SE
+  BUILD_DEVICES:= \
+    radxa_rock-4se
+endef
+
 define U-Boot/rock-pi-4-rk3399
   $(U-Boot/rk3399/Default)
   NAME:=ROCK Pi 4
@@ -264,6 +278,13 @@ define U-Boot/nanopi-r5s-rk3568
     friendlyarm_nanopi-r5s
 endef
 
+define U-Boot/x3568-v4-rk3568
+  $(U-Boot/rk3568/Default)
+  NAME:=NineTripod X3568 v4
+  BUILD_DEVICES:= \
+    ninetripod_x3568-v4
+endef
+
 define U-Boot/photonicat-rk3568
   $(U-Boot/rk3568/Default)
   NAME:=Photonicat
@@ -308,6 +329,12 @@ define U-Boot/sige3-rk3568
     armsom_sige3
 endef
 
+define U-Boot/xiguapi-v3-rk3568
+  $(U-Boot/rk3568/Default)
+  NAME:=XiGuaPi V3
+  BUILD_DEVICES:= \
+    nlnet_xiguapi-v3
+endef
 
 # RK3588 boards
 
@@ -389,6 +416,8 @@ UBOOT_TARGETS := \
   nanopc-t4-rk3399 \
   nanopi-r4s-rk3399 \
   nanopi-r4se-rk3399 \
+  rock-4c-plus-rk3399 \
+  rock-4se-rk3399 \
   rock-pi-4-rk3399 \
   rockpro64-rk3399 \
   rock-pi-s-rk3308 \
@@ -413,6 +442,8 @@ UBOOT_TARGETS := \
   nanopi-r5c-rk3568 \
   nanopi-r5s-rk3568 \
   photonicat-rk3568 \
+  x3568-v4-rk3568 \
+  xiguapi-v3-rk3568 \
   radxa-e25-rk3568 \
   roc-pc-rk3568 \
   rock-3a-rk3568 \

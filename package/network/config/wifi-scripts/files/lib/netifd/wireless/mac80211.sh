@@ -12,7 +12,7 @@ MP_CONFIG_INT="mesh_retry_timeout mesh_confirm_timeout mesh_holding_timeout mesh
 	       mesh_hwmp_rann_interval mesh_gate_announcements mesh_sync_offset_max_neighor
 	       mesh_rssi_threshold mesh_hwmp_active_path_to_root_timeout mesh_hwmp_root_interval
 	       mesh_hwmp_confirmation_interval mesh_awake_window mesh_plink_timeout"
-MP_CONFIG_BOOL="mesh_auto_open_plinks mesh_fwding"
+MP_CONFIG_BOOL="mesh_auto_open_plinks mesh_fwding mesh_nolearn"
 MP_CONFIG_STRING="mesh_power_mode"
 
 wdev_tool() {
@@ -560,6 +560,7 @@ mac80211_hostapd_setup_bss() {
 $hostapd_cfg
 bssid=$macaddr
 ${default_macaddr:+#default_macaddr}
+${random_macaddr:+#random_macaddr}
 ${dtim_period:+dtim_period=$dtim_period}
 ${max_listen_int:+max_listen_interval=$max_listen_int}
 EOF
@@ -688,12 +689,14 @@ mac80211_prepare_vif() {
 	json_add_string _ifname "$ifname"
 
 	default_macaddr=
+	random_macaddr=
 	if [ -z "$macaddr" ]; then
 		macaddr="$(mac80211_generate_mac $phy)"
 		macidx="$(($macidx + 1))"
 		default_macaddr=1
 	elif [ "$macaddr" = 'random' ]; then
 		macaddr="$(macaddr_random)"
+		random_macaddr=1
 	fi
 	json_add_string _macaddr "$macaddr"
 	json_add_string _default_macaddr "$default_macaddr"

@@ -98,6 +98,9 @@ platform_do_upgrade() {
 	netcore,n60|\
 	netcore,n60-pro|\
 	routerich,ax3000-ubootmod|\
+	tplink,tl-7dr7230-v1|\
+	tplink,tl-7dr7230-v2|\
+	tplink,tl-7dr7250-v1|\
 	tplink,tl-xdr4288|\
 	tplink,tl-xdr6086|\
 	tplink,tl-xdr6088|\
@@ -118,8 +121,8 @@ platform_do_upgrade() {
 	glinet,gl-x3000|\
 	glinet,gl-xe3000|\
 	huasifei,wh3000-emmc|\
+	huasifei,wh3000-pro|\
 	*Airpi*|\
-	cmcc,rax3000m-emmc|\
 	sl,3000-emmc|\
 	smartrg,sdg-8612|\
 	smartrg,sdg-8614|\
@@ -240,7 +243,7 @@ platform_copy_config() {
 	glinet,gl-x3000|\
 	glinet,gl-xe3000|\
 	huasifei,wh3000-emmc|\
-	cmcc,rax3000m-emmc|\
+	huasifei,wh3000-pro|\
 	jdcloud,re-cp-03|\
 	sl,3000-emmc|\
 	smartrg,sdg-8612|\

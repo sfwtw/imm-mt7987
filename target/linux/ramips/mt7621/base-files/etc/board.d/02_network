@@ -89,6 +89,7 @@ ramips_setup_interfaces()
 	asiarf,ap7621-nv1|\
 	beeline,smartbox-flash|\
 	beeline,smartbox-giga|\
+	c-life,xg1|\
 	elecom,wmc-x1800gst|\
 	elecom,wrc-x1800gs|\
 	gemtek,wvrtm-127acn|\
@@ -201,6 +202,7 @@ ramips_setup_macs()
 	wavlink,wl-wn533a8|\
 	winstars,ws-wn583a6|\
 	zbtlink,zbt-we1326|\
+	zbtlink,zbt-wg108|\
 	zbtlink,zbt-wg3526-16m|\
 	zbtlink,zbt-wg3526-32m)
 		label_mac=$(mtd_get_mac_binary factory 0x4)
@@ -287,7 +289,7 @@ ramips_setup_macs()
 		wan_mac=$(macaddr_add "$lan_mac" 1)
 		;;
 	jdcloud,re-sp-01b)
-		lan_mac=$(macaddr_canonicalize "$(strings "$(find_mtd_part config)" | sed -n 's/^'"mac"'=//p' | head -n1)")
+		lan_mac=$(mtd_get_mac_ascii config mac)
 		wan_mac=$lan_mac
 		label_mac=$lan_mac
 		;;
