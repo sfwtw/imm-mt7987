@@ -1,0 +1,15 @@
+{
+	"luci-app-qwebui": {
+		"description": "Qmodem WebUI",
+		"read": {
+			"uci": [
+				"qwebui"
+			]
+		},
+		"write": {
+			"uci": [
+				"qwebui"
+			]
+		}
+	}
+}

@@ -1,0 +1,46 @@
+#!/bin/sh
+. /lib/functions.sh
+
+if [ -f '/etc/apk/repositories.d/distfeeds.list' ]; then
+    patterns_to_remove="qmodem istore nss"
+    temp_file=$(mktemp)
+    while IFS= read -r line; do
+        remove=0
+        for pattern in $patterns_to_remove; do
+            if echo "$line" | grep -q "${pattern}"; then
+                remove=1
+                break
+            fi
+        done
+        if [ "$remove" -eq 0 ]; then
+            echo "$line" >> "$temp_file"
+        fi
+    done < /etc/apk/repositories.d/distfeeds.list
+    cat "$temp_file" > /etc/apk/repositories.d/distfeeds.list
+    rm "$temp_file"
+fi
+
+uci batch <<-EOF
+	set luci.main.mediaurlbase=/luci-static/argon
+	commit luci
+EOF
+
+case $(board_name) in
+    night,cpe)
+        uci set cpufreq.global.set='1'
+        uci set cpufreq.cpufreq.governor0='performance'
+        uci set cpufreq.cpufreq.minfreq0='2208000'
+        uci set cpufreq.cpufreq.maxfreq0='2208000'
+        uci commit cpufreq
+        ;;
+esac
+
+sed -i '/\/bin\/login -f root/!s|/bin/login|/bin/login -f root|' /etc/config/ttyd && /etc/init.d/ttyd reload
+
+sed -i '/OPENWRT_RELEASE/d' /usr/lib/os-release
+echo "OPENWRT_RELEASE='ImmortalWrt-MTK (237) / R25.10.28'" >> /usr/lib/os-release
+
+rm -rf /tmp/luci-modulecache/
+rm -f /tmp/luci-indexcache
+
+exit 0

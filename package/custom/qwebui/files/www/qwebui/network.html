@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="zh-cn" data-bs-theme="light">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QWebui - 网络</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/bootstrap.min.css" />
+  <script src="js/bootstrap.bundle.min.js"></script>
+  <script src="js/alpinejs.min.js" defer></script>
+  <style>
+    .ping-chart {
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: box-shadow 0.3s ease;
+    }
+    
+    .ping-chart:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+    
+    [data-bs-theme="dark"] .ping-chart {
+      background-color: #212529;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    [data-bs-theme="dark"] .ping-chart:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+    
+    .chart-container {
+      background: var(--bs-body-bg);
+      border-radius: 8px;
+      padding: 10px;
+      transition: all 0.3s ease;
+    }
+    
+    .chart-tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    [data-bs-theme="dark"] .chart-tooltip {
+      background: rgba(255, 255, 255, 0.95);
+      color: #212529;
+    }
+    
+    .ping-stats-container {
+      background: linear-gradient(135deg, rgba(13, 110, 253, 0.05) 0%, rgba(13, 202, 240, 0.05) 100%);
+      border: 1px solid rgba(13, 110, 253, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    [data-bs-theme="dark"] .ping-stats-container {
+      background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(13, 202, 240, 0.1) 100%);
+      border: 1px solid rgba(13, 110, 253, 0.2);
+    }
+    
+    .badge {
+      font-weight: 600;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+    }
+    
+    .card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    [data-bs-theme="dark"] .card:hover {
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+
+<body>
+  <main x-data="networkSettings()">
+    <!-- 初始加载指示器 -->
+    <div x-show="isInitialLoading" class="initial-loading-overlay">
+      <div class="initial-loading-content">
+        <div class="loading-spinner"></div>
+        <h4>初始化系统</h4>
+        <p>正在加载网络配置...</p>
+      </div>
+    </div>
+
+    <div class="container my-4">
+      <!-- 导航栏 -->
+      <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+          <a class="btn btn-outline-secondary me-3 back-btn-icon" href="/cgi-bin/luci/">
+            <svg width="20" height="20" viewBox="0 0 16 16">
+              <path fill="currentColor" d="M15 8a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 0 1-.708.708l-4-4a.498.498 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 7.5H14.5A.5.5 0 0 1 15 8"/>
+            </svg>
+          </a>
+
+          <span class="navbar-brand d-lg-none fw-bold mb-0">QWebui</span>
+
+          <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="navbarText">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              <li class="nav-item">
+                <a class="nav-link" href="index.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor" d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L2 8.207V13.5A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5V8.207l.646.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.707 1.5zM13 7.207V13.5a.5.5 0 0 0 .5.5h-9a.5.5 0 0 0-.5-.5V7.207l5-5 5 5z"/>
+                  </svg>
+                  首页
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="at.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor" d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4.414a1 1 0 0 0-.707.293l-2.414 2.414A1 1 0 0 1 0 13.586V2zm5 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm4 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+                  </svg>
+                  AT
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link active fw-semibold" href="network.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor" d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                    <path fill="currentColor" d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                  </svg>
+                  网络
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="sms.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor" d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2zm13 2.383-4.758 2.855L15 11.114v-5.73zm-.034 6.878L9.271 8.82 8 9.583 6.728 8.82l-5.694 3.44A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.739zM1 11.114l4.758-2.876L1 5.383v5.73z"/>
+                  </svg>
+                  短信
+                </a>
+              </li>
+            </ul>
+
+            <div class="d-flex align-items-center gap-3">
+              <button class="btn btn-link text-reset p-0" id="darkModeToggle" title="切换主题">
+                <svg width="20" height="20" viewBox="0 0 16 16">
+                  <path fill="currentColor" d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/>
+                </svg>
+              </button>
+
+              <select id="modemSelector" class="form-select" x-model="selectedCfg" @change="changeCfg()"
+                style="min-width: 200px;">
+                <template x-for="cfg in cfgList" :key="cfg.value">
+                  <option :value="cfg.value" x-text="cfg.name"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <!-- IP 和连接状态 -->
+      <div class="row g-3 mb-3">
+        <div class="col-12">
+          <div class="card fade-in">
+            <div class="card-header">
+              <i class="bi bi-router me-2"></i>IP 和连接状态
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="form-label">IPv4 地址</label>
+                    <input type="text" class="form-control" x-model="ipv4" readonly>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="form-label">IPv6 地址</label>
+                    <input type="text" class="form-control" x-model="ipv6" readonly>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-3">
+                <label class="form-label">互联网连接状态</label>
+                <div class="d-flex align-items-center">
+                  <span class="badge" :class="internetConnectionStatus === '已连接' ? 'bg-success' : 'bg-danger'" x-text="internetConnectionStatus"></span>
+                </div>
+              </div>
+              <div class="mt-3">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label fw-semibold">Baidu 延迟</label>
+                    <div class="ping-stats-container mb-2 p-2 rounded">
+                      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span class="badge bg-primary" id="averageBaidu">平均: 0 ms</span>
+                        <span class="badge bg-info">丢包: <span x-text="lossBaidu"></span> 个</span>
+                        <span class="badge" :class="lossRateBaidu > 10 ? 'bg-danger' : lossRateBaidu > 0 ? 'bg-warning' : 'bg-success'">
+                          丢包率: <span x-text="lossRateBaidu"></span>%
+                        </span>
+                      </div>
+                    </div>
+                    <div class="position-relative chart-container">
+                      <canvas id="baiduPingCanvas" class="ping-chart" style="width: 100%; height: 300px;"></canvas>
+                      <div id="baiduTooltip" class="chart-tooltip"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 网络偏好设置 -->
+      <div class="row g-3 mb-3">
+        <div class="col-12">
+          <div class="card fade-in">
+            <div class="card-header">
+              <i class="bi bi-gear me-2"></i>网络偏好设置
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="network3G" x-model="networkPrefer['3G']" @change="saveNetworkPrefer()">
+                    <label class="form-check-label" for="network3G">
+                      启用 3G
+                    </label>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="network4G" x-model="networkPrefer['4G']" @change="saveNetworkPrefer()">
+                    <label class="form-check-label" for="network4G">
+                      启用 4G
+                    </label>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="network5G" x-model="networkPrefer['5G']" @change="saveNetworkPrefer()">
+                    <label class="form-check-label" for="network5G">
+                      启用 5G
+                    </label>
+                  </div>
+                </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 频段锁定 -->
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="card fade-in">
+            <div class="card-header">
+              <i class="bi bi-lock me-2"></i>频段锁定
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="bandTypeSelect" class="form-label">选择网络类型</label>
+                                <select id="bandTypeSelect" class="form-select" x-model="selectedBandType">
+                  <template x-for="type in availableBandTypes" :key="type">
+                    <option :value="type" x-text="getBandTypeName(type)"></option>
+                  </template>
+                </select>
+              </div>
+              <div class="row g-3">
+                <template x-for="type in availableBandTypes" :key="type">
+                  <div class="col-12" x-show="selectedBandType === type">
+                    <h6 x-text="getBandTypeName(type) + ' 频段 (支持: ' + lockband[type].available_band.length + ', 已锁: ' + lockband[type].lock_band.length + ')'"></h6>
+                    <div class="mb-3 d-flex flex-wrap gap-3">
+                      <template x-for="band in lockband[type].available_band" :key="band.band_id">
+                        <div class="form-check me-3">
+                          <input class="form-check-input" type="checkbox" :id="type.toLowerCase() + '-' + band.band_id" :value="band.band_id" x-model="lockband[type].lock_band">
+                          <label class="form-check-label" :for="type.toLowerCase() + '-' + band.band_id" x-text="band.band_name"></label>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+            <div class="card-footer">
+              <button class="btn btn-primary" @click="saveLockband()" :disabled="isSaving">保存更改</button>
+              <span x-show="isSaving" class="ms-2">保存中...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+  </main>
+
+  <script src="js/dark-mode.js"></script>
+  <script>
+    // 常量配置
+    const CONFIG = {
+      CHART: {
+        MAX_DATA_POINTS: 50,
+        UPDATE_INTERVAL: 5000,
+        ANIMATION_DURATION: 500,
+        RESIZE_DEBOUNCE: 200,
+        HEIGHT: 300,
+        PADDING: 60,
+        COLORS: { BAIDU: '#dc3545' }
+      },
+      THEME: {
+        DARK: { axis: '#adb5bd', grid: 'rgba(173, 181, 189, 0.1)', text: '#f8f9fa', point: '#212529' },
+        LIGHT: { axis: '#495057', grid: 'rgba(73, 80, 87, 0.1)', text: '#212529', point: '#ffffff' }
+      }
+    };
+    
+    // 辅助函数：计算点的大小
+    const calculatePointSize = (count, spacing) => {
+      const sizes = [
+        { max: 10, outer: 6, inner: 3 },
+        { max: 20, outer: 5, inner: 2.5 },
+        { max: 35, outer: 4, inner: 2 },
+        { max: Infinity, outer: 3, inner: 1.5 }
+      ];
+      const { outer, inner } = sizes.find(s => count <= s.max);
+      const adjust = spacing < 20 ? 1 : 0;
+      
+      return {
+        outerRadius: Math.max(2, outer - (adjust * 1)),
+        innerRadius: Math.max(1, inner - (adjust * 0.5))
+      };
+    };
+    
+    // 辅助函数：获取主题颜色
+    const getThemeColors = () => {
+      const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+      const theme = isDark ? CONFIG.THEME.DARK : CONFIG.THEME.LIGHT;
+      return {
+        isDarkMode: isDark,
+        axisColor: theme.axis,
+        gridColor: theme.grid,
+        textColor: theme.text,
+        pointInnerColor: theme.point
+      };
+    };
+
+    function networkSettings() {
+      return {
+        cfgList: [],
+        selectedCfg: null,
+        networkPrefer: { '3G': false, '4G': false, '5G': false },
+        lockband: { UMTS: { available_band: [], lock_band: [] }, LTE: { available_band: [], lock_band: [] }, NR: { available_band: [], lock_band: [] } },
+        initialLockband: null,
+        availableBandTypes: [],
+        selectedBandType: null,
+        isInitialLoading: true,
+        isSaving: false,
+        ipv4: '',
+        ipv6: '',
+        internetConnectionStatus: '未知',
+        latestBaiduPing: 0,
+        pingDataBaidu: [],
+        currentPointsBaidu: [],
+        animFrameBaidu: null,
+        lossBaidu: 0,
+        lossRateBaidu: 0,
+        pingInterval: null,
+        init() {
+          this.updateCfgList();
+          // 监听主题变化，重绘图表
+          const observer = new MutationObserver(() => {
+            if (this.pingDataBaidu.length > 0) {
+              this.updateChart('baiduPingCanvas', this.pingDataBaidu, 'baiduTooltip');
+            }
+          });
+          observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-bs-theme']
+          });
+          
+          // 监听窗口大小变化，重绘图表
+          let resizeTimeout;
+          window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+              if (this.pingDataBaidu.length > 0) {
+                this.currentPointsBaidu = [];
+                this.updateChart('baiduPingCanvas', this.pingDataBaidu, 'baiduTooltip');
+              }
+            }, CONFIG.CHART.RESIZE_DEBOUNCE);
+          });
+        },
+        updateCfgList() {
+          fetch('/cgi-bin/luci/admin/modem/qmodem/get_modem_cfg')
+            .then(response => {
+              if (response.status === 403) {
+                window.location.href = '/cgi-bin/luci/admin/modem/qwebui';
+                return;
+              }
+              return response.json();
+            })
+            .then(data => {
+              if (!data) return;
+              this.cfgList = data.cfgs.map(cfg => ({ value: cfg.cfg, name: cfg.name }));
+              if (this.cfgList.length > 0) {
+                if (!this.selectedCfg) {
+                  this.selectedCfg = this.cfgList[0].value;
+                }
+                this.changeCfg();
+              } else {
+                this.showNotification("未找到调制解调器配置，请检查设备连接。", "warning");
+                this.cfgList = [{ value: '', name: '无可用配置' }];
+                this.selectedCfg = '';
+              }
+            })
+            .catch(error => {
+              this.showNotification("获取调制解调器配置失败，请检查网络或设备。", "danger");
+            })
+            .finally(() => {
+              this.isInitialLoading = false;
+            });
+        },
+        changeCfg() {
+          if (!this.selectedCfg) return;
+          this.loadSavedSelections();
+          this.fetchNetworkPrefer();
+          this.fetchLockband();
+          this.fetchIPs();
+          this.fetchPingStatus();
+          this.startPingInterval();
+        },
+        fetchNetworkPrefer() {
+          fetch('/cgi-bin/luci/admin/modem/qmodem/modem_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'get_network_prefer'
+          }))
+            .then(response => response.json())
+            .then(data => {
+              if (data.network_prefer) {
+                this.networkPrefer['3G'] = data.network_prefer['3G'] === '1';
+                this.networkPrefer['4G'] = data.network_prefer['4G'] === '1';
+                this.networkPrefer['5G'] = data.network_prefer['5G'] === '1';
+              }
+            })
+            .catch(error => {
+              this.showNotification("获取网络偏好失败。", "danger");
+            });
+        },
+        fetchLockband() {
+          fetch('/cgi-bin/luci/admin/modem/qmodem/modem_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'get_lockband'
+          }))
+            .then(response => response.json())
+            .then(data => {
+              if (data.lockband) {
+                this.lockband = data.lockband;
+                this.initialLockband = JSON.parse(JSON.stringify(data.lockband));
+                this.availableBandTypes = Object.keys(data.lockband).reverse();
+                if (this.availableBandTypes.length > 0) {
+                  this.selectedBandType = this.availableBandTypes[0];
+                }
+                this.saveSelections();
+              }
+            })
+            .catch(error => {
+              this.showNotification("获取锁频段失败。", "danger");
+            });
+        },
+        hasLockbandChanged(cls) {
+          if (!this.initialLockband) return false;
+          return JSON.stringify([...this.lockband[cls].lock_band].sort()) !== 
+                 JSON.stringify([...this.initialLockband[cls].lock_band].sort());
+        },
+        saveLockband() {
+          this.isSaving = true;
+          const promises = ['UMTS', 'LTE', 'NR']
+            .filter(cls => this.hasLockbandChanged(cls))
+            .map(cls => {
+              const params = JSON.stringify({
+                band_class: cls,
+                lock_band: this.lockband[cls].lock_band.join(',')
+              });
+              return fetch('/cgi-bin/luci/admin/modem/qmodem/modem_ctrl?' + new URLSearchParams({
+                cfg: this.selectedCfg,
+                action: 'set_lockband',
+                params: params
+              }))
+                .then(response => response.json())
+                .then(data => {
+                  if (!data.result) throw new Error(`保存 ${cls} 频段失败`);
+                });
+            });
+          
+          if (promises.length === 0) {
+            this.showNotification("没有更改需要保存。", "info");
+            this.isSaving = false;
+            return;
+          }
+          
+          Promise.allSettled(promises)
+            .then(results => {
+              const failures = results.filter(r => r.status === 'rejected');
+              const msg = failures.length > 0 ? "部分频段保存失败。" : "锁频段保存成功。";
+              const type = failures.length > 0 ? "warning" : "success";
+              this.showNotification(msg, type);
+              if (failures.length === 0) {
+                this.initialLockband = JSON.parse(JSON.stringify(this.lockband));
+                this.saveSelections();
+              }
+            })
+            .catch(() => this.showNotification("保存锁频段时出错。", "danger"))
+            .finally(() => this.isSaving = false);
+        },
+        fetchIPs() {
+          if (!this.selectedCfg) return Promise.resolve();
+          return fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'get_ip',
+            translate: '1'
+          }))
+            .then(response => response.json())
+            .then(data => {
+              console.log('IP data:', data);
+              if (data.result) {
+                this.ipv4 = data.ipv4 || this.ipv4;
+                this.ipv6 = data.ipv6 || this.ipv6;
+              }
+            })
+            .catch(error => console.error('Error fetching IPs:', error));
+        },
+        updatePingData(pingOutput) {
+          const pingTimes = this.parsePingTimes(pingOutput);
+          const dataArray = this.pingDataBaidu;
+          const canvasId = 'baiduPingCanvas';
+          const tooltipId = 'baiduTooltip';
+          
+          if (pingTimes.times.length > 0) {
+            const latestTime = pingTimes.times[pingTimes.times.length - 1];
+            dataArray.push({ value: latestTime, timestamp: Date.now() });
+            while (dataArray.length > CONFIG.CHART.MAX_DATA_POINTS) {
+              dataArray.shift();
+            }
+          }
+          
+          this.lossBaidu = pingTimes.loss;
+          this.lossRateBaidu = pingTimes.lossRate;
+          this.updateChart(canvasId, dataArray, tooltipId);
+        },
+        fetchPingStatus() {
+          const statusMap = { connected: "已连接", dns_blocked: "DNS阻断" };
+          
+          return fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'get_ping'
+          }))
+            .then(response => response.json())
+            .then(data => {
+              this.internetConnectionStatus = statusMap[data.status] || "已断开";
+              if (data.baidu_ping) this.updatePingData(data.baidu_ping);
+            })
+            .catch(error => {
+              console.log('Ping fetch failed:', error);
+              this.internetConnectionStatus = "已断开";
+            });
+        },
+        saveNetworkPrefer() {
+          const selected = ['3G', '4G', '5G'].filter(g => this.networkPrefer[g]);
+          const params = JSON.stringify(selected).replace(/"/g, '\\"');
+          fetch('/cgi-bin/luci/admin/modem/qmodem/modem_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'set_network_prefer',
+            params: params
+          }))
+            .then(response => response.json())
+            .then(data => {
+              if (data.result) {
+                this.showNotification("网络偏好保存成功。", "success");
+                this.saveSelections();
+                this.fetchNetworkPrefer(); // 刷新数据
+              } else {
+                this.showNotification("网络偏好保存失败。", "danger");
+              }
+            })
+            .catch(error => {
+              this.showNotification("保存网络偏好时出错。", "danger");
+            });
+        },
+        loadSavedSelections() {
+          const key = `network_selections_${this.selectedCfg}`;
+          const saved = localStorage.getItem(key);
+          if (saved) {
+            const data = JSON.parse(saved);
+            if (data.lockband) {
+              this.lockband = data.lockband;
+            }
+            if (data.networkPrefer) {
+              this.networkPrefer = data.networkPrefer;
+            }
+          }
+        },
+        saveSelections() {
+          const key = `network_selections_${this.selectedCfg}`;
+          const data = {
+            lockband: this.lockband,
+            networkPrefer: this.networkPrefer,
+            selectedBandType: this.selectedBandType
+          };
+          localStorage.setItem(key, JSON.stringify(data));
+        },
+        parsePingTimes(pingOutput) {
+          const lines = pingOutput.split('\n');
+          const times = lines
+            .map(line => line.match(/time=(\d+\.\d+) ms/))
+            .filter(Boolean)
+            .map(match => parseFloat(match[1]));
+          
+          let loss = 0, lossRate = 0;
+          lines.forEach(line => {
+            const lossMatch = line.match(/(\d+)% packet loss/);
+            if (lossMatch) {
+              lossRate = parseInt(lossMatch[1]);
+              const statMatch = line.match(/(\d+) packets transmitted, (\d+) packets received/);
+              if (statMatch) {
+                loss = parseInt(statMatch[1]) - parseInt(statMatch[2]);
+              }
+            }
+          });
+          return { times, loss, lossRate };
+        },
+        startPingInterval() {
+          if (this.pingInterval) clearInterval(this.pingInterval);
+          this.pingInterval = setInterval(() => {
+            this.fetchPingStatus();
+          }, CONFIG.CHART.UPDATE_INTERVAL);
+        },
+        updateChart(canvasId, data, tooltipId) {
+          const canvas = document.getElementById(canvasId);
+          const tooltip = document.getElementById(tooltipId);
+          const averageSpan = document.getElementById('averageBaidu');
+          if (!canvas || !tooltip || !averageSpan) return;
+          
+          // 自适应canvas大小
+          const container = canvas.parentElement;
+          const dpr = window.devicePixelRatio || 1;
+          const rect = container.getBoundingClientRect();
+          canvas.width = rect.width * dpr;
+          canvas.height = CONFIG.CHART.HEIGHT * dpr;
+          canvas.style.width = rect.width + 'px';
+          canvas.style.height = CONFIG.CHART.HEIGHT + 'px';
+          
+          const currentPoints = this.currentPointsBaidu;
+          
+          if (data.length === 0) {
+            averageSpan.textContent = '平均: 0 ms';
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            return;
+          }
+          
+          const values = data.map(d => d.value);
+          const avg = (values.reduce((sum, v) => sum + v, 0) / values.length).toFixed(2);
+          averageSpan.textContent = `平均: ${avg} ms`;
+          
+          const maxValue = Math.max(...values);
+          const minValue = 0; // 从0开始
+          const range = maxValue || 1;
+          
+          const width = canvas.width;
+          const height = canvas.height;
+          const padding = 60; // 使用逻辑像素
+          
+          // 计算目标点（使用逻辑像素坐标）
+          const actualWidth = width / dpr;
+          const actualHeight = height / dpr;
+          const targetPoints = [];
+          data.forEach((d, index) => {
+            const x = padding + (index / Math.max(1, data.length - 1)) * (actualWidth - padding * 2);
+            const y = actualHeight - padding - ((d.value - minValue) / range) * (actualHeight - padding * 2);
+            targetPoints.push({x, y, value: d.value, timestamp: d.timestamp});
+          });
+          
+          // 如果是第一次，直接设置不使用动画
+          if (currentPoints.length === 0) {
+            this.currentPointsBaidu = targetPoints.map(p => ({...p}));
+            this.drawChartFrame(canvas, this.currentPointsBaidu, tooltip, width, height, minValue, range, canvasId, data);
+            return;
+          }
+          
+          // 如果数据长度改变，调整currentPoints数组
+          if (currentPoints.length !== targetPoints.length) {
+            console.log(`${canvasId}: Length changed from ${currentPoints.length} to ${targetPoints.length}`);
+            
+            if (currentPoints.length < targetPoints.length) {
+              // 新增了点，在末尾添加
+              const newPoints = targetPoints.slice(currentPoints.length);
+              newPoints.forEach(p => currentPoints.push({...p}));
+            } else {
+              // 减少了点（移除了旧数据），从头部移除
+              const removeCount = currentPoints.length - targetPoints.length;
+              currentPoints.splice(0, removeCount);
+            }
+          }
+          
+          // 使用平滑动画过渡到目标位置
+          console.log(`${canvasId}: Starting animation, current: ${currentPoints.length}, target: ${targetPoints.length}`);
+          this.animatePoints(currentPoints, targetPoints, (points) => {
+            this.drawChartFrame(canvas, points, tooltip, width, height, minValue, range, canvasId, data);
+          });
+        },
+        animatePoints(current, target, callback) {
+          const duration = CONFIG.CHART.ANIMATION_DURATION;
+          const startTime = Date.now();
+          
+          // 保存起始位置
+          const startPositions = current.map(p => ({x: p.x, y: p.y}));
+          
+          console.log(`🎬 Animation started for Baidu, points: ${current.length}`);
+          
+          // 取消之前的动画
+          const animKey = 'animFrameBaidu';
+          if (this[animKey]) {
+            cancelAnimationFrame(this[animKey]);
+          }
+          
+          const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // ease-out-cubic 缓动
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            
+            // 更新位置
+            for (let i = 0; i < current.length; i++) {
+              if (target[i]) {
+                current[i].x = startPositions[i].x + (target[i].x - startPositions[i].x) * easeProgress;
+                current[i].y = startPositions[i].y + (target[i].y - startPositions[i].y) * easeProgress;
+                current[i].value = target[i].value;
+                current[i].timestamp = target[i].timestamp;
+              }
+            }
+            
+            callback(current);
+            
+            if (progress < 1) {
+              this[animKey] = requestAnimationFrame(animate);
+            } else {
+              // 完成动画
+              for (let i = 0; i < current.length; i++) {
+                if (target[i]) {
+                  current[i].x = target[i].x;
+                  current[i].y = target[i].y;
+                  current[i].value = target[i].value;
+                  current[i].timestamp = target[i].timestamp;
+                }
+              }
+              this[animKey] = null;
+              console.log(`✅ Animation completed for Baidu`);
+            }
+          };
+          
+          this[animKey] = requestAnimationFrame(animate);
+        },
+        drawChartFrame(canvas, points, tooltip, width, height, minValue, range, canvasId, originalData) {
+          const ctx = canvas.getContext('2d');
+          const dpr = window.devicePixelRatio || 1;
+          
+          ctx.clearRect(0, 0, width, height);
+          ctx.scale(dpr, dpr);
+          
+          // 获取主题颜色
+          const colors = getThemeColors();
+          const { isDarkMode, axisColor, gridColor, textColor, pointInnerColor } = colors;
+          
+          const padding = CONFIG.CHART.PADDING;
+          const maxValue = range; // range已经是从0开始的最大值
+          const actualWidth = width / dpr;
+          const actualHeight = height / dpr;
+          
+          // 绘制网格线
+          ctx.strokeStyle = gridColor;
+          ctx.lineWidth = 1;
+          for (let i = 0; i <= 5; i++) {
+            const y = actualHeight - padding - (i / 5) * (actualHeight - padding * 2);
+            ctx.beginPath();
+            ctx.moveTo(padding, y);
+            ctx.lineTo(actualWidth - padding / 2, y);
+            ctx.stroke();
+          }
+          
+          // 绘制坐标轴
+          ctx.strokeStyle = axisColor;
+          ctx.lineWidth = 2;
+          // Y 轴
+          ctx.beginPath();
+          ctx.moveTo(padding, padding / 2);
+          ctx.lineTo(padding, actualHeight - padding);
+          ctx.stroke();
+          // X 轴
+          ctx.beginPath();
+          ctx.moveTo(padding, actualHeight - padding);
+          ctx.lineTo(actualWidth - padding / 2, actualHeight - padding);
+          ctx.stroke();
+          
+          // Y 轴标签 - 从0开始
+          ctx.fillStyle = textColor;
+          ctx.font = 'bold 12px Arial';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          for (let i = 0; i <= 5; i++) {
+            const value = (maxValue * i / 5);
+            const y = actualHeight - padding - (i / 5) * (actualHeight - padding * 2);
+            ctx.fillText(value.toFixed(0) + ' ms', padding - 10, y);
+          }
+          
+          // X 轴标签
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          if (originalData && originalData.length > 1) {
+            const startTime = new Date(originalData[0].timestamp);
+            const endTime = new Date(originalData[originalData.length - 1].timestamp);
+            ctx.fillText(startTime.toLocaleTimeString(), padding, actualHeight - padding + 10);
+            ctx.fillText(endTime.toLocaleTimeString(), actualWidth - padding / 2, actualHeight - padding + 10);
+          }
+          
+          if (points.length === 0) {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            return;
+          }
+          
+          // 绘制渐变背景区域
+          const gradient = ctx.createLinearGradient(0, padding / 2, 0, actualHeight - padding);
+          const lineColor = CONFIG.CHART.COLORS.BAIDU;
+          
+          // 使用配置的颜色创建渐变
+          gradient.addColorStop(0, 'rgba(220, 53, 69, 0.2)');
+          gradient.addColorStop(1, 'rgba(220, 53, 69, 0.02)');
+          
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.moveTo(points[0].x, actualHeight - padding);
+          points.forEach((point, index) => {
+            ctx.lineTo(point.x, point.y);
+          });
+          ctx.lineTo(points[points.length - 1].x, actualHeight - padding);
+          ctx.closePath();
+          ctx.fill();
+          
+          // 绘制平滑曲线
+          ctx.strokeStyle = lineColor;
+          ctx.lineWidth = 3;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          
+          ctx.beginPath();
+          ctx.moveTo(points[0].x, points[0].y);
+          
+          for (let i = 0; i < points.length - 1; i++) {
+            const cp1x = points[i].x + (points[i + 1].x - points[i].x) / 3;
+            const cp1y = points[i].y;
+            const cp2x = points[i].x + 2 * (points[i + 1].x - points[i].x) / 3;
+            const cp2y = points[i + 1].y;
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, points[i + 1].x, points[i + 1].y);
+          }
+          ctx.stroke();
+          
+          // 计算点的自适应大小
+          const pointCount = points.length;
+          const chartWidth = actualWidth - padding * 1.5;
+          const avgSpacing = chartWidth / Math.max(1, pointCount - 1);
+          const { outerRadius, innerRadius } = calculatePointSize(pointCount, avgSpacing);
+          
+          // 绘制数据点
+          points.forEach((point, index) => {
+            // 外圈
+            ctx.fillStyle = lineColor;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, outerRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // 内圈
+            ctx.fillStyle = pointInnerColor;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, innerRadius, 0, 2 * Math.PI);
+            ctx.fill();
+          });
+          
+          // 重置transform
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          
+          // 鼠标事件 - 使用原始数据的时间戳
+          canvas.onmousemove = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left) * dpr;
+            const mouseY = (e.clientY - rect.top) * dpr;
+            
+            // 计算自适应的触发半径
+            const pointCount = points.length;
+            let hoverRadius = pointCount <= 10 ? 10 : pointCount <= 20 ? 8 : pointCount <= 35 ? 7 : 6;
+            
+            let hovered = null;
+            let hoveredIndex = -1;
+            for (let i = 0; i < points.length; i++) {
+              const point = points[i];
+              const distance = Math.sqrt((mouseX - point.x * dpr) ** 2 + (mouseY - point.y * dpr) ** 2);
+              if (distance < hoverRadius * dpr) {
+                hovered = point;
+                hoveredIndex = i;
+                break;
+              }
+            }
+            
+            if (hovered && originalData && originalData[hoveredIndex]) {
+              tooltip.style.left = `${e.clientX - rect.left + 15}px`;
+              tooltip.style.top = `${e.clientY - rect.top - 15}px`;
+              tooltip.innerHTML = `
+                <div style="font-weight: bold;">${hovered.value.toFixed(2)} ms</div>
+                <div style="font-size: 11px; opacity: 0.9;">${new Date(originalData[hoveredIndex].timestamp).toLocaleTimeString()}</div>
+              `;
+              tooltip.style.display = 'block';
+              tooltip.style.opacity = '1';
+            } else {
+              tooltip.style.display = 'none';
+              tooltip.style.opacity = '0';
+            }
+          };
+          
+          canvas.onmouseleave = () => {
+            tooltip.style.display = 'none';
+            tooltip.style.opacity = '0';
+          };
+        },
+
+        getBandTypeName(type) {
+          const names = {
+            'UMTS': '3G (UMTS)',
+            'LTE': '4G (LTE)',
+            'NR': '5G (NR)'
+          };
+          return names[type] || type;
+        },
+        showNotification(message, type = 'info') {
+          let container = document.getElementById('notification-container');
+          if (!container) {
+            container = document.createElement('div');
+            container.id = 'notification-container';
+            container.style.position = 'fixed';
+            container.style.top = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            container.style.maxWidth = '350px';
+            container.style.pointerEvents = 'none';
+            document.body.appendChild(container);
+          }
+          const notification = document.createElement('div');
+          notification.className = `alert alert-${type === 'danger' ? 'danger' : type === 'warning' ? 'warning' : 'success'} notification`;
+          notification.style.marginBottom = '10px';
+          notification.style.pointerEvents = 'auto';
+          notification.innerHTML = `
+            <div class="d-flex align-items-center">
+              <span>${message}</span>
+              <button type="button" class="btn-close ms-auto" aria-label="Close"></button>
+            </div>
+          `;
+          container.appendChild(notification);
+          notification.querySelector('.btn-close').addEventListener('click', () => {
+            notification.remove();
+          });
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.remove();
+            }
+          }, 5000);
+        }
+      };
+    }
+  </script>
+</body>
+
+</html>

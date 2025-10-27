@@ -1,0 +1,560 @@
+* {
+  font-family: "Poppins", sans-serif;
+}
+
+/* 基础组件样式 */
+.card {
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-radius: 12px;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.card-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+  font-weight: 600;
+  border-radius: 12px 12px 0 0 !important;
+  font-size: 1.1rem;
+  padding: 1rem 1.25rem;
+}
+
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-outline-secondary:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* 导航栏样式 */
+.navbar {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+.navbar-nav-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.navbar-nav-responsive {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.navbar-nav-responsive .nav-item {
+  flex-shrink: 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  border-radius: 6px;
+  margin: 0 0.1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+.nav-link.active {
+  background-color: #0d6efd;
+  color: white !important;
+}
+
+.nav-more-dropdown {
+  flex-shrink: 0;
+}
+
+.nav-dropdown-menu {
+  margin-top: 0.75rem !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  border: 1px solid #dee2e6;
+  min-width: 180px;
+  padding-top: 0.5rem;
+}
+
+.nav-dropdown-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.nav-dropdown-menu .dropdown-item:first-child {
+  padding-top: 0.8rem;
+}
+
+.nav-dropdown-menu .dropdown-item:hover {
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+.nav-dropdown-menu .dropdown-item.active {
+  background-color: #0d6efd;
+  color: white;
+}
+
+.back-btn-icon {
+  padding: 0.45rem 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 表格样式 */
+.table th {
+  background-color: #f8f9fa;
+  border: none;
+  font-weight: 600;
+  color: #495057;
+  padding: 0.75rem;
+}
+
+.table td {
+  border: none;
+  padding: 0.75rem;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.table tbody tr:hover {
+  background-color: #f8f9fa;
+  transition: background-color 0.2s ease;
+}
+
+.table th.col-name {
+  width: 40%;
+  min-width: 120px;
+  word-break: break-all;
+}
+
+.table td.col-content {
+  width: 75%;
+  word-break: break-word;
+}
+
+/* 状态卡片样式 */
+.status-cards-row > [class*='col-'] {
+  display: flex;
+}
+
+.status-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 180px;
+}
+
+.status-card .card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem 1rem;
+}
+
+.status-card svg {
+  transition: transform 0.3s ease;
+}
+
+.status-card:hover svg {
+  transform: scale(1.1);
+}
+
+.metric-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.metric-value .carrier-logo,
+.metric-value .carrier-fallback {
+  width: auto;
+  height: auto;
+  vertical-align: middle;
+  object-fit: contain;
+  margin-top: -2px;
+}
+
+.carrier-fallback {
+  aspect-ratio: 1/1;
+}
+
+/* 进度条样式 */
+.progress {
+  border-radius: 10px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.progress-bar {
+  border-radius: 10px;
+  transition: width 0.8s ease;
+}
+
+.progress-container {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.progress-value-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #000;
+  text-shadow: 0 0 3px rgba(255,255,255,0.8);
+  white-space: nowrap;
+}
+
+/* 加载和动画效果 */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.collapse-icon {
+  transition: transform 0.3s ease;
+}
+
+[aria-expanded="false"] .collapse-icon {
+  transform: rotate(0deg);
+}
+
+[aria-expanded="true"] .collapse-icon {
+  transform: rotate(180deg);
+}
+
+/* 模态框和覆盖层 */
+.modal-overlay, .loading-overlay, .initial-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.loading-overlay {
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(2px);
+}
+
+.initial-loading-overlay {
+  background: rgba(255,255,255,0.98);
+  backdrop-filter: blur(3px);
+}
+
+.loading-modal, .loading-content, .initial-loading-content {
+  background-color: #fff;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.loading-modal {
+  padding: 3rem;
+  border-radius: 10px;
+}
+
+.loading-content {
+  padding: 2rem;
+}
+
+.initial-loading-content {
+  padding: 3rem;
+  border-radius: 16px;
+  max-width: 400px;
+}
+
+/* 特定组件样式 */
+.at-terminal {
+  font-family: 'Courier New', Monaco, monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  background-color: #f8f9fa;
+  border: 2px solid #e9ecef;
+}
+
+.quick-command-btn {
+  height: auto;
+  min-height: 3rem;
+  white-space: normal;
+  text-align: left;
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.sms-container {
+  max-height: 450px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+}
+
+.sms-item {
+  border-bottom: 1px solid #f1f3f4;
+  transition: background-color 0.2s ease;
+}
+
+.sms-item:hover {
+  background-color: #f8f9fa;
+}
+
+.sms-meta {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.refresh-controls {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10001;
+  max-width: 350px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* 暗色主题 */
+[data-bs-theme="dark"] .card {
+  background-color: #212529;
+  color: #fff;
+}
+
+[data-bs-theme="dark"] .card-header {
+  background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+  border-bottom-color: #495057;
+  color: #fff;
+}
+
+[data-bs-theme="dark"] .table th {
+  background-color: #343a40;
+  color: #fff;
+}
+
+[data-bs-theme="dark"] .table td {
+  border-bottom-color: #495057;
+  color: #fff;
+}
+
+[data-bs-theme="dark"] .table tbody tr:hover {
+  background-color: #343a40;
+}
+
+[data-bs-theme="dark"] .navbar {
+  background: linear-gradient(135deg, #212529 0%, #343a40 100%);
+}
+
+[data-bs-theme="dark"] .nav-dropdown-menu {
+  background-color: #212529;
+  border-color: #495057;
+}
+
+[data-bs-theme="dark"] .nav-dropdown-menu .dropdown-item:hover {
+  background-color: rgba(13, 110, 253, 0.2);
+}
+
+[data-bs-theme="dark"] .progress-value-overlay {
+  color: #fff;
+  text-shadow: 0 0 3px rgba(0,0,0,0.8);
+}
+
+[data-bs-theme="dark"] .at-terminal {
+  background-color: #2d3748;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+
+[data-bs-theme="dark"] .sms-container {
+  border-color: #495057;
+}
+
+[data-bs-theme="dark"] .sms-item {
+  border-bottom-color: #495057;
+}
+
+[data-bs-theme="dark"] .sms-item:hover {
+  background-color: #343a40;
+}
+
+[data-bs-theme="dark"] .sms-meta {
+  color: #adb5bd;
+}
+
+[data-bs-theme="dark"] .refresh-controls {
+  background: linear-gradient(135deg, #343a40 0%, #212529 100%);
+}
+
+[data-bs-theme="dark"] .loading-content,
+[data-bs-theme="dark"] .initial-loading-content {
+  background: #212529;
+  color: #fff;
+}
+
+[data-bs-theme="dark"] .initial-loading-overlay {
+  background: rgba(33, 37, 41, 0.98);
+}
+
+[data-bs-theme="dark"] .initial-loading-content p {
+  color: #adb5bd;
+}
+
+/* 载波badge样式 */
+.carrier-badge {
+  background-color: #495057;
+  color: white;
+}
+
+[data-bs-theme="dark"] .carrier-badge {
+  background-color: #6c757d;
+  color: white;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .nav-link {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .nav-link {
+    padding: 0.45rem 0.5rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .status-card {
+    min-height: 150px;
+  }
+  
+  .status-card .card-body {
+    padding: 1.5rem 1rem;
+  }
+  
+  .metric-value {
+    font-size: 2rem;
+  }
+  
+  .col {
+    margin-bottom: 1rem;
+  }
+  
+  .col-name {
+    width: 30% !important;
+  }
+  
+  .col-content {
+    width: 70% !important;
+  }
+  
+  .quick-command-btn {
+    min-height: 2.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .nav-link {
+    padding: 0.4rem 0.45rem;
+    font-size: 0.75rem;
+  }
+  
+  .nav-dropdown-menu {
+    margin-top: 0.75rem !important;
+  }
+}

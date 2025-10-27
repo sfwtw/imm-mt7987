@@ -1,0 +1,44 @@
+#!/bin/sh
+. /lib/functions.sh
+
+get_ping()
+{
+    /usr/share/qwebui/qwebui_ctrl.sh get_ping $1
+}
+
+get_uptime()
+{
+    /usr/share/qwebui/qwebui_ctrl.sh get_uptime $1
+}
+
+get_ip()
+{
+    /usr/share/qwebui/qwebui_ctrl.sh get_ip $1
+}
+
+get_traffic()
+{
+    /usr/share/qwebui/qwebui_ctrl.sh get_traffic $1
+}
+
+case "$1" in
+    list)
+        echo '{ "get_uptime": {}, "get_ping": {}, "get_ip": {}, "get_traffic": {} }'
+    ;;
+    call)
+        case "$2" in
+            "get_uptime")
+                get_uptime
+            ;;
+            "get_ping")
+                get_ping
+            ;;
+            "get_ip")
+                get_ip
+            ;;
+            "get_traffic")
+                get_traffic
+            ;;
+        esac
+    ;;
+esac

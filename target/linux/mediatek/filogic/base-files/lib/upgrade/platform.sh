@@ -189,6 +189,9 @@ platform_do_upgrade() {
 		CI_ROOT_UBIPART=ubi
 		nand_do_upgrade "$1"
 		;;
+	nradio,wt9103*)
+		nand_do_upgrade "$1"
+		;;
 	*)
 		nand_do_upgrade "$1"
 		;;

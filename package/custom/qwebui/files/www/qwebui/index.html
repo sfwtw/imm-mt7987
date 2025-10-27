@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="zh-cn" data-bs-theme="light">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QWebui - 首页</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/bootstrap.min.css" />
+  <script src="js/bootstrap.bundle.min.js"></script>
+  <script src="js/alpinejs.min.js" defer></script>
+</head>
+
+<body>
+  <main x-data="processAllInfos()">
+    <!-- 初始加载指示器 - 只在第一次初始化时显示 -->
+    <div x-show="isInitialLoading" class="initial-loading-overlay">
+      <div class="initial-loading-content">
+        <div class="loading-spinner"></div>
+        <h4>初始化系统</h4>
+        <p>正在加载模块配置...</p>
+      </div>
+    </div>
+
+    <div class="container my-4">
+      <!-- 导航栏优化 -->
+      <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+          <a class="btn btn-outline-secondary me-3 back-btn-icon" href="/cgi-bin/luci/">
+            <svg width="20" height="20" viewBox="0 0 16 16">
+              <path fill="currentColor" d="M15 8a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 0 1-.708.708l-4-4a.498.498 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 7.5H14.5A.5.5 0 0 1 15 8"/>
+            </svg>
+          </a>
+
+          <span class="navbar-brand d-lg-none fw-bold mb-0">QWebui</span>
+
+          <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="navbarText">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              <li class="nav-item">
+                <a class="nav-link active fw-semibold" href="index.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor"
+                      d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293l6-6Z" />
+                  </svg>
+                  首页
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="at.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor"
+                      d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783z" />
+                  </svg>
+                  AT
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link fw-semibold" href="network.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor" d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                    <path fill="currentColor" d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                  </svg>
+                  网络
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="sms.html">
+                  <svg width="16" height="16" viewBox="0 0 16 16" class="me-1">
+                    <path fill="currentColor"
+                      d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z" />
+                  </svg>
+                  短信
+                </a>
+              </li>
+            </ul>
+
+            <div class="d-flex align-items-center gap-3">
+              <button class="btn btn-link text-reset p-0" id="darkModeToggle" title="切换主题">
+                <svg width="20" height="20" viewBox="0 0 16 16">
+                  <path fill="currentColor"
+                    d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z" />
+                </svg>
+              </button>
+
+              <select id="modemSelector" class="form-select" x-model="selectedCfg" @change="changeCfg()"
+                style="min-width: 200px;">
+                <template x-for="cfg in cfgList" :key="cfg.value">
+                  <option :value="cfg.value" x-text="cfg.name"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <!-- 状态卡片区域 -->
+      <div class="row g-3 mb-5 status-cards-row">
+        <!-- 温度卡片 -->
+        <div class="col-6 col-md-6 col-lg-3 d-flex">
+          <div class="card status-card fade-in flex-fill" :class="{'status-indicator': temperature !== '0'}">
+            <div class="card-body text-center">
+              <div class="mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" height="60" width="60">
+                  <path fill="#fdb53c"
+                    d="M160 64c-26.5 0-48 21.5-48 48V276.5c0 17.3-7.1 31.9-15.3 42.5C86.2 332.6 80 349.5 80 368c0 44.2 35.8 80 80 80s80-35.8 80-80c0-18.5-6.2-35.4-16.7-48.9c-8.2-10.6-15.3-25.2-15.3-42.5V112c0-26.5-21.5-48-48-48zM48 112C48 50.2 98.1 0 160 0s112 50.1 112 112V276.5c0 .1 .1 .3 .2 .6c.2 .6 .8 1.6 1.7 2.8c18.9 24.4 30.1 55 30.1 88.1c0 79.5-64.5 144-144 144S16 447.5 16 368c0-33.2 11.2-63.8 30.1-88.1c.9-1.2 1.5-2.2 1.7-2.8c.1-.3 .2-.5 .2-.6V112zM208 368c0 26.5-21.5 48-48 48s-48-21.5-48-48c0-20.9 13.4-38.7 32-45.3V272c0-8.8 7.2-16 16-16s16 7.2 16 16v50.7c18.6 6.6 32 24.4 32 45.3z" />
+                </svg>
+              </div>
+              <div class="metric-value" x-text="temperature + '°C'"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIM卡状态 -->
+        <div class="col-6 col-md-6 col-lg-3 d-flex">
+          <div class="card status-card fade-in flex-fill" :class="{'status-indicator': simStatus === '已激活'}">
+            <div class="card-body text-center">
+              <div class="mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" height="60" width="60">
+                  <path fill="#6a46d8"
+                    d="M64 0H242.7c17 0 33.3 6.7 45.3 18.7L365.3 96c12 12 18.7 28.3 18.7 45.3V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V64C0 28.7 28.7 0 64 0zM96 192c-17.7 0-32 14.3-32 32v32h64V192H96zM64 352h80 96 80V288H240 144 64v64zM320 224c0-17.7-14.3-32-32-32H256v64h64V224zM160 192v64h64V192H160zM288 448c17.7 0 32-14.3 32-32V384H256v64h32zM160 384v64h64V384H160zM64 416c0 17.7 14.3 32 32 32h32V384H64v32z" />
+                </svg>
+              </div>
+              <!-- 未激活显示原样 -->
+              <div class="metric-value" x-show="simStatus !== '已激活'" x-text="simStatus"></div>
+              <!-- 已激活时：已激活 + 图标 + 运营商 -->
+              <div class="metric-value d-flex justify-content-center align-items-center gap-2 flex-wrap" x-show="simStatus === '已激活'">
+                <!-- 运营商图标（改成本地图片） -->
+                <template x-if="networkProvider === '中国移动'">
+                  <img src="file/cm.png" alt="中国移动" class="carrier-logo">
+                </template>
+                <template x-if="networkProvider === '中国联通'">
+                  <img src="file/cu.png" alt="中国联通" class="carrier-logo">
+                </template>
+                <template x-if="networkProvider === '中国电信'">
+                  <img src="file/ct.png" alt="中国电信" class="carrier-logo">
+                </template>
+                <!-- 如果不是有图的运营商，直接显示文本 -->
+                <span x-show="networkProvider !== '未知运营商' && networkProvider !== '中国移动' && networkProvider !== '中国联通' && networkProvider !== '中国电信'" x-text="networkProvider"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 信号强度 -->
+        <div class="col-6 col-md-6 col-lg-3 d-flex">
+          <div class="card status-card fade-in flex-fill" :class="{'status-indicator': signalPercentage > 0}">
+            <div class="card-body text-center">
+              <div class="mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height="60" width="60">
+                  <path fill="#2fa7fb"
+                    d="M576 0c17.7 0 32 14.3 32 32V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V32c0-17.7 14.3-32 32-32zM448 96c17.7 0 32 14.3 32 32V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V128c0-17.7 14.3-32 32-32zM352 224V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V224c0-17.7 14.3-32 32-32s32 14.3 32 32zM192 288c17.7 0 32 14.3 32 32V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V320c0-17.7 14.3-32 32-32zM96 416v64c0 17.7-14.3 32-32 32s-32-14.3-32-32V416c0-17.7 14.3-32 32-32s32 14.3 32 32z" />
+                </svg>
+              </div>
+              <div class="metric-value" x-text="signalPercentage + '%'"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 网络状态 -->
+        <div class="col-6 col-md-6 col-lg-3 d-flex">
+          <div class="card status-card fade-in flex-fill" :class="{'status-indicator': internetConnectionStatus === '已连接'}">
+            <div class="card-body text-center">
+              <div class="mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height="60" width="60">
+                  <path fill="#20c0ae"
+                    d="M0 336c0 79.5 64.5 144 144 144H512c70.7 0 128-57.3 128-128c0-61.9-44-113.6-102.4-125.4c4.1-10.7 6.4-22.4 6.4-34.6c0-53-43-96-96-96c-19.7 0-38.1 6-53.3 16.2C367 64.2 315.3 32 256 32C167.6 32 96 103.6 96 192c0 2.7 .1 5.4 .2 8.1C40.2 219.8 0 273.2 0 336z" />
+                </svg>
+              </div>
+              <div class="metric-value" x-text="internetConnectionStatus"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- 详细信息区域 -->
+      <div class="row g-4">
+        <!-- 左侧列 -->
+        <div class="col-lg-6">
+          <!-- 基本信息 -->
+          <div class="card mb-4 fade-in" x-show="getDataByClass('基本信息').length > 0">
+            <div class="card-header">
+              <i class="bi bi-info-circle me-2"></i>基本信息
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <tbody>
+                    <template x-for="item in getDataByClass('基本信息')" :key="item.key">
+                      <tr>
+                        <th scope="row" class="col-name" x-text="item.full_name || item.key"></th>
+                        <td class="col-content" x-text="item.value"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 网络信息 -->
+          <div class="card fade-in"
+            x-show="getDataByClass('网络信息').length > 0 || modem_uptime || uptime || downloadStat || uploadStat">
+            <div class="card-header">
+              <i class="bi bi-wifi me-2"></i>网络信息
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <tbody>
+                    <template x-for="item in getDataByClass('网络信息')" :key="item.key">
+                      <tr>
+                        <th scope="row" class="col-name" x-text="item.full_name || item.key"></th>
+                        <td class="col-content" x-text="item.value"></td>
+                      </tr>
+                    </template>
+                    <tr x-show="downloadStat">
+                      <th scope="row" class="col-name">📥 下载流量</th>
+                      <td class="col-content"><span class="badge bg-primary" x-text="downloadStat"></span></td>
+                    </tr>
+                    <tr x-show="uploadStat">
+                      <th scope="row" class="col-name">📤 上传流量</th>
+                      <td class="col-content"><span class="badge bg-success" x-text="uploadStat"></span></td>
+                    </tr>
+                    <tr x-show="modem_uptime">
+                      <th scope="row" class="col-name">⏱️ 模块在线时间</th>
+                      <td class="col-content" x-text="modem_uptime"></td>
+                    </tr>
+                    <tr x-show="uptime">
+                      <th scope="row" class="col-name">🕐 设备在线时间</th>
+                      <td class="col-content" x-text="uptime"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card-footer refresh-controls">
+              <div class="d-flex align-items-center justify-content-between flex-wrap">
+                <div class="d-flex align-items-center mb-2 mb-md-0">
+                  <span class="text-muted small me-2">🔄 刷新率</span>
+                  <div class="input-group input-group-sm" style="width: 120px;">
+                    <input x-model="newRefreshRate" class="form-control" type="number" min="3" max="60"
+                      :placeholder="refreshRate + 's'" />
+                    <button @click="updateRefreshRate()" class="btn btn-outline-primary btn-sm" type="button">
+                      设置
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <small class="text-muted">
+                    <i class="bi bi-clock me-1"></i>
+                    <span x-text="lastUpdate"></span>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧列 -->
+        <div class="col-lg-6">
+          <!-- SIM卡信息 -->
+          <div class="card mb-4 fade-in" x-show="getDataByClass('SIM卡信息').length > 0">
+            <div class="card-header" data-bs-toggle="collapse" href="#simInfoCollapse" role="button"
+              style="cursor: pointer;">
+              <i class="bi bi-sim me-2"></i>SIM卡信息
+              <i class="bi bi-chevron-down float-end collapse-icon">⬇</i>
+            </div>
+            <div class="card-body p-0 collapse" id="simInfoCollapse">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <tbody>
+                    <template x-for="item in getDataByClass('SIM卡信息')" :key="item.key">
+                      <tr>
+                        <th scope="row" class="col-name" x-text="item.full_name || item.key"></th>
+                        <td class="col-content" x-text="item.value"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 基站信息 -->
+          <div class="card fade-in" x-show="getDataByClass('基站信息').length > 0">
+            <div class="card-header">
+              <i class="bi bi-broadcast me-2"></i>基站信息
+              <button @click="showCards = !showCards" class="btn btn-sm btn-outline-secondary float-end">♻</button>
+            </div>
+            <div class="card-body p-0">
+              <!-- 卡片显示模式 -->
+              <!-- 卡片显示模式 -->
+              <div x-show="showCards">
+                <div x-show="getBaseStationCards().length > 0" class="p-3">
+                  <div class="d-flex pb-2" :style="'overflow-x: ' + (getBaseStationCards().length > 2 ? 'scroll' : 'hidden') + '; scrollbar-width: ' + (getBaseStationCards().length > 2 ? 'auto' : 'none') + '; -ms-overflow-style: ' + (getBaseStationCards().length > 2 ? 'auto' : 'none') + '; white-space: nowrap;'">
+                    <style> .d-flex::-webkit-scrollbar { display: none; } </style>
+                    <template x-for="(card, index) in getBaseStationCards()" :key="'card-' + index">
+                      <div class="card me-3" :style="'width: calc(' + (getBaseStationCards().length > 2 ? '40%' : '50%') + ' - 0.5rem); min-width: 0px; flex-shrink: 0;'">
+                        <div class="card-body">
+                          <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="card-title mb-0" x-text="'PCI: ' + (card.pci || '-')"></h6>
+                            <span class="badge carrier-badge" x-text="index === 0 ? '主载波' : '副载波' + index"></span>
+                          </div>
+                          <div class="row">
+                            <div class="col-6">
+                              <small class="text-muted">ARFCN</small><br>
+                              <span x-text="card.arfcn || '-'"></span>
+                            </div>
+                            <div class="col-6">
+                              <small class="text-muted">Band</small><br>
+                              <span x-text="card.band || '-'"></span>
+                            </div>
+                            <div class="col-6">
+                              <small class="text-muted">DL</small><br>
+                              <span x-text="(card.dl || '-') + (card.dl && card.dl !== '-' ? 'M' : '')"></span>
+                            </div>
+                            <div class="col-6">
+                              <small class="text-muted">UL</small><br>
+                              <span x-text="(card.ul || '-') + (card.ul && card.ul !== '-' ? 'M' : '')"></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+                <div class="table-responsive" x-show="filteredBaseStationItems().length > 0">
+                  <table class="table table-hover mb-0">
+                    <tbody>
+                      <template x-for="item in filteredBaseStationItems()" :key="item.key">
+                        <tr>
+                          <th scope="row" class="col-name" x-text="item.full_name || item.key"></th>
+                          <td class="col-content">
+                            <!-- 进度条显示 -->
+                            <div x-show="item.type === 'progress_bar'" class="progress-container">
+                              <div class="progress" style="height: 24px;">
+                                <div :class="getProgressBarClass(getProgressPercentage(item))"
+                                  :style="'width: ' + Math.max(getProgressPercentage(item), 8) + '%'"
+                                  :aria-valuenow="getProgressPercentage(item)" aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                              </div>
+                              <div class="progress-value-overlay"
+                                x-text="item.value + (item.unit ? ' ' + item.unit : '') + ' (' + getProgressPercentage(item) + '%)'">
+                              </div>
+                            </div>
+                            <!-- 普通文本显示 -->
+                            <span x-show="item.type === 'plain_text'" class="fw-semibold"
+                              x-text="item.value + (item.unit ? ' ' + item.unit : '')"></span>
+                          </td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <!-- 表格显示模式 -->
+              <div x-show="!showCards" class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <tbody>
+                    <template x-for="item in getDataByClass('基站信息')" :key="item.key">
+                      <tr>
+                        <th scope="row" class="col-name" x-text="item.full_name || item.key"></th>
+                        <td class="col-content">
+                          <!-- 进度条显示 -->
+                          <div x-show="item.type === 'progress_bar'" class="progress-container">
+                            <div class="progress" style="height: 24px;">
+                              <div :class="getProgressBarClass(getProgressPercentage(item))"
+                                :style="'width: ' + Math.max(getProgressPercentage(item), 8) + '%'"
+                                :aria-valuenow="getProgressPercentage(item)" aria-valuemin="0" aria-valuemax="100">
+                              </div>
+                            </div>
+                            <div class="progress-value-overlay"
+                              x-text="item.value + (item.unit ? ' ' + item.unit : '') + ' (' + getProgressPercentage(item) + '%)'">
+                            </div>
+                          </div>
+                          <!-- 普通文本显示 -->
+                          <span x-show="item.type === 'plain_text'" class="fw-semibold"
+                            x-text="item.value + (item.unit ? ' ' + item.unit : '')"></span>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/dark-mode.js"></script>
+  <script>
+    function processAllInfos() {
+      return {
+        internetConnectionStatus: "已断开",
+        temperature: "0",
+        simStatus: "无SIM卡",
+        networkProvider: "未知运营商",
+        signalPercentage: "0",
+        uptime: "Unknown",
+        modem_uptime: "Unknown",
+        lastUpdate: new Date().toLocaleString(),
+        newRefreshRate: null,
+        refreshRate: 5,
+        downloadStat: "0",
+        uploadStat: "0",
+        cfgList: [],
+        selectedCfg: null,
+        intervalId: null,
+        dataItems: [],
+        isLoading: false,
+        isInitialLoading: true,
+        showCards: true,
+        init() {
+          const savedRate = localStorage.getItem('refreshRate');
+          if (savedRate) {
+            this.refreshRate = parseInt(savedRate);
+            this.newRefreshRate = this.refreshRate;
+          } else {
+            this.newRefreshRate = this.refreshRate;
+          }
+          this.updateCfgList();
+        },
+        updateCfgList() {
+          fetch('/cgi-bin/luci/admin/modem/qmodem/get_modem_cfg')
+            .then(response => {
+              if (response.status === 403) {
+                window.location.href = '/cgi-bin/luci/admin/modem/qwebui';
+                return;
+              }
+              return response.json();
+            })
+            .then(data => {
+              if (!data) return;
+              this.cfgList = data.cfgs.map(cfg => ({ value: cfg.cfg, name: cfg.name }));
+              if (this.cfgList.length > 0) {
+                if (!this.selectedCfg) {
+                  this.selectedCfg = this.cfgList[0].value;
+                }
+                this.changeCfg();
+              } else {
+                this.showNotification("未找到调制解调器配置，请检查设备连接。", "warning");
+                this.cfgList = [{ value: '', name: '无可用配置' }];
+                this.selectedCfg = '';
+              }
+            })
+            .catch(error => {
+              this.showNotification("获取调制解调器配置失败，请检查网络或设备。", "danger");
+            })
+            .finally(() => {
+              this.isInitialLoading = false;
+            });
+        },
+        changeCfg() {
+          if (!this.selectedCfg) {
+            this.isLoading = false;
+            return;
+          }
+          this.fetchAllInfo();
+          clearInterval(this.intervalId);
+          this.intervalId = setInterval(() => {
+            this.fetchAllInfo();
+          }, this.refreshRate * 1000);
+        },
+        fetchAllInfo() {
+          if (!this.selectedCfg) return;
+          if (!this.isInitialLoading) {
+            this.isLoading = true;
+          }
+          const promises = [
+            this.fetchModemInfo(),
+            this.fetchUpTime(),
+            this.fetchPingStatus(),
+            this.fetchTrafficStats()
+          ];
+          Promise.allSettled(promises)
+            .then(results => {
+              const failures = results.filter(result => result.status === 'rejected');
+              if (failures.length > 0) {
+                console.warn('部分请求失败:', failures);
+              }
+            })
+            .finally(() => {
+              this.isLoading = false;
+              this.lastUpdate = new Date().toLocaleString();
+            });
+        },
+        fetchModemInfo() {
+          return fetch('/cgi-bin/luci/admin/modem/qmodem/modem_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'info',
+            translate: '1'
+          }))
+            .then(response => response.json())
+            .then(data => {
+              this.parseData(data);
+            })
+            .catch(error => {
+              throw error;
+            });
+        },
+        fetchPingStatus() {
+          return fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'get_ping'
+          }))
+            .then(response => response.json())
+            .then(data => {
+              if (data.status === "connected") {
+                this.internetConnectionStatus = "已连接";
+              } else if (data.status === "dns_blocked") {
+                this.internetConnectionStatus = "DNS阻断";
+              } else {
+                this.internetConnectionStatus = "已断开";
+              }
+            })
+            .catch(error => {
+              this.internetConnectionStatus = "已断开";
+            });
+        },
+        fetchTrafficStats() {
+          return fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'get_traffic'
+          }))
+            .then(response => response.json())
+            .then(data => {
+              this.uploadStat = this.bytesToSize(data.rx_bytes);
+              this.downloadStat = this.bytesToSize(data.tx_bytes);
+            })
+            .catch(error => console.error('Error fetching traffic:', error));
+        },
+        showNotification(message, type = 'info') {
+          let container = document.getElementById('notification-container');
+          if (!container) {
+            container = document.createElement('div');
+            container.id = 'notification-container';
+            container.style.position = 'fixed';
+            container.style.top = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            container.style.maxWidth = '350px';
+            container.style.pointerEvents = 'none';
+            document.body.appendChild(container);
+          }
+          const notification = document.createElement('div');
+          notification.className = `alert alert-${type === 'danger' ? 'danger' : type === 'warning' ? 'warning' : 'success'} notification`;
+          notification.style.marginBottom = '10px';
+          notification.style.pointerEvents = 'auto';
+          notification.innerHTML = `
+            <div class="d-flex align-items-center">
+              <span>${message}</span>
+              <button type="button" class="btn-close ms-auto" aria-label="Close"></button>
+            </div>
+          `;
+          container.appendChild(notification);
+          notification.querySelector('.btn-close').addEventListener('click', () => {
+            notification.remove();
+          });
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.remove();
+            }
+          }, 5000);
+        },
+        bytesToSize(bytes) {
+          const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+          if (bytes == 0) return "0 Byte";
+          const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+          return Math.round(bytes / Math.pow(1024, i), 2) + " " + sizes[i];
+        },
+        fetchUpTime() {
+          return fetch('/cgi-bin/luci/admin/modem/qwebui/qwebui_ctrl?' + new URLSearchParams({
+            cfg: this.selectedCfg,
+            action: 'get_uptime'
+          }))
+            .then(response => response.json())
+            .then(data => {
+              if (data.uptime) {
+                const networkUptimeSeconds = parseInt(data.uptime);
+                this.uptime = this.formatUptime(networkUptimeSeconds);
+              } else {
+                this.uptime = "未知";
+              }
+              if (data.network_uptime) {
+                const networkUptimeSeconds = parseInt(data.network_uptime);
+                this.modem_uptime = this.formatUptime(networkUptimeSeconds);
+              } else {
+                this.modem_uptime = "未知";
+              }
+            })
+            .catch(error => {
+              this.uptime = "获取失败";
+              this.modem_uptime = "获取失败";
+            });
+        },
+        parseData(data) {
+          this.dataItems = data.filter(item => {
+            const defaultValues = ['未知', 'N/A', '未知运营商', '未知时间', '-', '0', '000', '00000',
+              '000.000.000.000', '0000:0000:0000:0000:0000:0000:0000:0000',
+              'Unknown', '已断开', '无SIM卡', '', null, undefined];
+            return item.value && !defaultValues.includes(item.value.toString().trim());
+          });
+          for (let entry of data) {
+            if (entry.key === 'temperature') {
+              this.temperature = entry.value.replace('°C', '');
+            } else if (entry.key === 'SIM Status') {
+              this.simStatus = entry.value === 'ready' ? '已激活' : '无SIM卡';
+            } else if (entry.key === 'ISP') {
+              this.networkProvider = this.mapISPValue(entry.value);
+            }
+          }
+          this.calculateSignalDisplay();
+        },
+        mapISPValue(val) {
+          switch ((val || '').trim()) {
+            case '4E2D56FD8054901A':
+            case 'CHN-CU':
+            case '46001':
+              return '中国联通';
+            case 'CHN-CT':
+            case '46011':
+              return '中国电信';
+            case 'CHN-CMCC':
+            case '46000':
+              return '中国移动';
+            default:
+              return val && val !== 'N/A' ? val : '未知运营商';
+          }
+        },
+        updateRefreshRate() {
+          if (this.newRefreshRate >= 3 && this.newRefreshRate <= 60) {
+            this.refreshRate = this.newRefreshRate;
+            localStorage.setItem('refreshRate', this.refreshRate);
+            clearInterval(this.intervalId);
+            this.intervalId = setInterval(() => {
+              this.fetchAllInfo();
+            }, this.refreshRate * 1000);
+          }
+        },
+        formatUptime(seconds) {
+          if (isNaN(seconds) || seconds < 0) return "未知时间";
+          const days = Math.floor(seconds / 86400);
+          const hours = Math.floor((seconds % 86400) / 3600);
+          const minutes = Math.floor((seconds % 3600) / 60);
+          let result = "";
+          if (days > 0) {
+            result += days + (days === 1 ? " 天" : " 天");
+          }
+          if (hours > 0) {
+            if (result) result += " ";
+            result += hours + (hours === 1 ? " 小时" : " 小时");
+          }
+          if (minutes > 0 || (!days && !hours)) {
+            if (result) result += " ";
+            result += minutes + (minutes === 1 ? " 分钟" : " 分钟");
+          }
+          return result || "0 分钟";
+        },
+        getProgressBarClass(percentage) {
+          percentage = parseInt(percentage);
+          if (percentage >= 60) return 'progress-bar bg-success';
+          else if (percentage >= 40) return 'progress-bar bg-warning';
+          else return 'progress-bar bg-danger';
+        },
+        getDataByClass(className) {
+          return this.dataItems.filter(item => item.class === className).map(item => {
+            const processedItem = { ...item };
+            if (processedItem.key === 'ISP') {
+              processedItem.value = this.mapISPValue(processedItem.value);
+            }
+            return processedItem;
+          });
+        },
+        filteredBaseStationItems() {
+          const excludeKeys = ['ARFCN', 'Physical Cell ID', 'Band', 'DL Bandwidth', 'UL Bandwidth'];
+          let items = this.getDataByClass('基站信息').filter(item => !excludeKeys.includes(item.key)).sort((a, b) => {
+            if (a.type === 'progress_bar' && b.type !== 'progress_bar') return -1;
+            if (a.type !== 'progress_bar' && b.type === 'progress_bar') return 1;
+            return 0;
+          });
+          if (this.showCards) {
+            items = items.filter(item => item.type === 'progress_bar');
+          }
+          return items;
+        },
+        getBaseStationCards() {
+          const baseStationItems = this.dataItems.filter(item => item.class === '基站信息');
+          const keys = ['ARFCN', 'Physical Cell ID', 'Band', 'DL Bandwidth', 'UL Bandwidth'];
+          const values = {};
+          keys.forEach(key => {
+            const item = baseStationItems.find(item => item.key === key);
+            values[key] = item ? item.value : '';
+          });
+          const pciValues = values['Physical Cell ID'] ? values['Physical Cell ID'].split(' / ').map(v => v.trim()) : [];
+          const numCards = pciValues.length;
+          const cards = [];
+          for (let i = 0; i < numCards; i++) {
+            cards.push({
+              arfcn: this.getSplitValue(values['ARFCN'], i),
+              pci: pciValues[i] || '-',
+              band: this.getSplitValue(values['Band'], i),
+              dl: this.getSplitValue(values['DL Bandwidth'], i),
+              ul: this.getSplitValue(values['UL Bandwidth'], i)
+            });
+          }
+          return cards;
+        },
+        getSplitValue(value, index) {
+          if (!value) return '-';
+          const parts = value.split(' / ').map(v => v.trim());
+          return parts[index] || '-';
+        },
+        getProgressPercentage(item) {
+          if (item.type !== 'progress_bar' || !item.min_value || !item.max_value) {
+            return 0;
+          }
+          const value = parseFloat(item.value);
+          const minValue = parseFloat(item.min_value);
+          const maxValue = parseFloat(item.max_value);
+          if (isNaN(value) || isNaN(minValue) || isNaN(maxValue)) {
+            return 0;
+          }
+          let percentage = ((value - minValue) / (maxValue - minValue)) * 100;
+          if (percentage > 100) percentage = 100;
+          if (percentage < 0) percentage = 0;
+          return Math.round(percentage);
+        },
+        calculateSignalDisplay() {
+          const signalItems = this.dataItems.filter(item =>
+            item.type === 'progress_bar' &&
+            (item.key.includes('RSRP') || item.key.includes('SINR'))
+          );
+          if (signalItems.length > 0) {
+            const percentages = signalItems.map(item => this.getProgressPercentage(item));
+            const average = percentages.reduce((sum, p) => sum + p, 0) / percentages.length;
+            this.signalPercentage = Math.round(average);
+          } else {
+            this.signalPercentage = 0;
+          }
+        }
+      };
+    }
+  </script>
+</body>
+
+</html>

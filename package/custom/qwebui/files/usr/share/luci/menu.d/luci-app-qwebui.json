@@ -1,0 +1,13 @@
+{
+	"admin/modem/qwebui": {
+		"title": "Qmodem WebUI",
+		"order": 90,
+		"action": {
+			"type": "view",
+			"path": "qwebui"
+		},
+		"depends": {
+			"acl": [ "luci-app-qwebui" ]
+		}
+	}
+}
