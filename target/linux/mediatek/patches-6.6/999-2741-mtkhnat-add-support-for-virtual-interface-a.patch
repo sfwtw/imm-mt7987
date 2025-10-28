@@ -41,7 +41,7 @@ index 0bf7af676..803bc51cb 100644
 --- a/net/8021q/vlan_dev.c
 +++ b/net/8021q/vlan_dev.c
 @@ -800,6 +800,7 @@ static int vlan_dev_flow_offload_check(struct flow_offload_hw_path *path)
- 	path->flags |= BIT(DEV_PATH_VLAN);
+ 	path->flags |= DEV_PATH_VLAN;
  	path->vlan_proto = vlan->vlan_proto;
  	path->vlan_id = vlan->vlan_id;
 +	path->virt_dev = dev;
@@ -74,10 +74,10 @@ index b83031a12..23755b2a6 100644
 +	struct net_device *dev = path->dev;
 +	struct ip6_tnl *tnl = netdev_priv(dev);
 +
-+	if (path->flags & BIT(DEV_PATH_DSLITE))
++	if (path->flags & DEV_PATH_DSLITE)
 +		return -EEXIST;
 +
-+	path->flags |= BIT(DEV_PATH_DSLITE);
++	path->flags |= DEV_PATH_DSLITE;
 +	path->dev = tnl->dev;
 +
 +	return 0;
@@ -123,10 +123,10 @@ index 3ffb6a5b1..442a30536 100644
 +	struct net_device *dev = path->dev;
 +	struct ip_tunnel *tnl = netdev_priv(dev);
 +
-+	if (path->flags & BIT(DEV_PATH_6RD))
++	if (path->flags & DEV_PATH_6RD)
 +		return -EEXIST;
 +
-+	path->flags |= BIT(DEV_PATH_6RD);
++	path->flags |= DEV_PATH_6RD;
 +	path->dev = tnl->dev;
 +
 +	return 0;

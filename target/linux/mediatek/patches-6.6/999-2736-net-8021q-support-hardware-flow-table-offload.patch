@@ -36,7 +36,7 @@ index d3e511e1e..0bf7af676 100644
 +	if (path->flags & DEV_PATH_VLAN)
 +		return -EEXIST;
 +
-+	path->flags |= BIT(DEV_PATH_VLAN);
++	path->flags |= DEV_PATH_VLAN;
 +	path->vlan_proto = vlan->vlan_proto;
 +	path->vlan_id = vlan->vlan_id;
 +	path->dev = vlan->real_dev;
