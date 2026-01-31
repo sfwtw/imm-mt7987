@@ -33,6 +33,11 @@ define Device/Default
 	pad-rootfs | append-metadata
 endef
 
+define Build/asus-trx
+	$(STAGING_DIR_HOST)/bin/asusuimage $(wordlist 1,$(words $(1)),$(1)) -i $@ -o $@.new
+	mv $@.new $@
+endef
+
 define Image/get_fw_ar_ver
 	$(shell sed -n 's/^FW_AR_VER\t:=\t*//p' $(TOPDIR)/$(call qstrip,$(CONFIG_AUTO_AR_CONF)))
 endef
