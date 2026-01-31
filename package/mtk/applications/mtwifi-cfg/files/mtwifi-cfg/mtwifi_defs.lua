@@ -57,6 +57,7 @@ mtwifi_defs.vif_cfgs = {
     ["HT_STBC"] = "1",
     ["IgmpSnEnable"] = "0",
     ["RRMEnable"] = "1",
+    ["WNMEnable"] = "0",
     ["VHT_BW_SIGNAL"] = "0",
     ["VHT_LDPC"] = "1",
     ["VHT_SGI"] = "1",
@@ -65,6 +66,10 @@ mtwifi_defs.vif_cfgs = {
     ["MuMimoUlEnable"] = "0",
     ["MuOfdmaDlEnable"] = "1",
     ["MuOfdmaUlEnable"] = "1",
+    ["PpMuMimoDlEnable"] = "0",
+    ["PpMuMimoUlEnable"] = "0",
+    ["PpOfdmaDlEnable"] = "1",
+    ["PpOfdmaUlEnable"] = "1",
     ["DLSCapable"] = "0",
     ["WdsEnable"] = "0",
     ["WscConfMode"] = "0",
@@ -76,6 +81,11 @@ mtwifi_defs.vif_cfgs_idx = {
     ["WPAPSK"] = "12345678",
     ["SSID"] = "",
     ["RADIUS_Key"] = "",
+}
+
+mtwifi_defs.vif_mac = {
+    ["MacAddress"] = "",
+    -- ["MldAddr"] = "",
 }
 
 mtwifi_defs.vif_acl = {
